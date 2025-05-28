@@ -10,8 +10,8 @@ import AddTeamForm from '../pages/dashboard/Team';
 import AddUserForm from '../pages/dashboard/Users';
 import Customers from '../pages/dashboard/Customer';
 import Parts from '../pages/dashboard/Parts';
-import ViewAssets from '../sections/dashboard/Views/ViewAssets'; // Import the new ViewAssets page
-import ViewParts from '../sections/dashboard/Views/ViewParts';
+import ViewAssets from '../sections/dashboard/VIews/ViewAssets'; // Import the new ViewAssets page
+import ViewParts from '../sections/dashboard/VIews/ViewParts';
 
 // render- Dashboard
 const DashboardDefault = Loadable(lazy(() => import('pages/dashboard/default')));
