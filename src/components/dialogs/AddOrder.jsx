@@ -1,7 +1,7 @@
 import { Dialog, DialogContent, Typography } from '@mui/material';
 
 import Stack from '@mui/material/Stack';
-import FirebaseRegister from 'sections/dashboard/forms/workOrderForm';
+import FirebaseRegister from 'sections/dashboard/Forms/WorkOrderForm';
 
 
 // ================================|| JWT - REGISTER ||================================ //
