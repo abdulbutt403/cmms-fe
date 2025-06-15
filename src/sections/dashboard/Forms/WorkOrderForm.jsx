@@ -31,11 +31,11 @@ import api from '../../../api/api';
 
 // ============================|| WORK ORDER - REGISTER ||============================ //
 
-export default function WorkOrderRegister() {
+export default function WorkOrderRegister({closeModal}) {
   const [tasks, setTasks] = useState([]);
   const [parts, setParts] = useState([]);
   const [newTask, setNewTask] = useState({ taskName: '', taskType: '' });
-  const [newPart, setNewPart] = useState({ partName: '', quantity: 1 });
+  const [newPart, setNewPart] = useState({ partId: "", quantity: 0 }); 
   const [isRecurring, setIsRecurring] = useState(false);
   const [photo, setPhoto] = useState(null);
   const [recurringWO, setRecurringWO] = useState('- Select -');
@@ -46,8 +46,9 @@ export default function WorkOrderRegister() {
   const [buildings, setBuildings] = useState([]);
   const [assets, setAssets] = useState([]);
   const [selectedBuilding, setSelectedBuilding] = useState('');
-  const [users, setUsers] = useState([]); // New state for users
-  const [teams, setTeams] = useState([]); // New state for teams
+  const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [allParts, setAllParts] = useState([]);
 
   const handleAddTask = () => {
     if (newTask.taskName.trim()) {
@@ -93,9 +94,9 @@ export default function WorkOrderRegister() {
 
     const fetchUsers = async () => {
       try {
-        const res = await api.get('/users'); // Assuming endpoint exists
+        const res = await api.get('/users');
         if (res.data.success) {
-          setUsers(res.data.data); // Assuming response has users array
+          setUsers(res.data.data);
         }
       } catch (err) {
         console.error('Failed to load users', err);
@@ -104,12 +105,24 @@ export default function WorkOrderRegister() {
 
     const fetchTeams = async () => {
       try {
-        const res = await api.get('/teams'); // Assuming endpoint exists
+        const res = await api.get('/teams');
         if (res.data.success) {
-          setTeams(res.data.data); // Assuming response has teams array
+          setTeams(res.data.data);
         }
       } catch (err) {
         console.error('Failed to load teams', err);
+      }
+    };
+
+    const fetchParts = async () => {
+      try {
+        const res = await api.get("/parts");
+        if (res.data.success) {
+          setAllParts(res.data.data);
+        }
+      } catch (err) {
+        console.error("Failed to load parts", err);
+        toast.error("Failed to load parts");
       }
     };
 
@@ -118,6 +131,7 @@ export default function WorkOrderRegister() {
     fetchVendors();
     fetchUsers();
     fetchTeams();
+    fetchParts();
   }, []);
 
   const handleBuildingChange = async (e, setFieldValue) => {
@@ -144,9 +158,17 @@ export default function WorkOrderRegister() {
   };
 
   const handleAddPart = () => {
-    if (newPart.partName.trim() && newPart.quantity > 0) {
-      setParts([...parts, { ...newPart, partName: newPart.partName.trim() }]);
-      setNewPart({ partName: '', quantity: 1 });
+    if (newPart.partId && newPart.quantity > 0) {
+      const selectedPart = allParts.find((p) => p._id === newPart.partId);
+      setParts([
+        ...parts,
+        {
+          partId: newPart.partId,
+          partName: selectedPart.partName,
+          quantity: Math.max(1, newPart.quantity),
+        },
+      ]);
+      setNewPart({ partId: "", quantity: 1 });
     }
   };
 
@@ -158,53 +180,96 @@ export default function WorkOrderRegister() {
     setIsRecurring(e.target.checked);
   };
 
-  const handleSubmit = async (values) => {
+  const handleSubmit = async (values, { setSubmitting, resetForm }) => {
     try {
+      setSubmitting(true);
+      
       const formData = new FormData();
-      formData.append('title', values.title);
-      formData.append('startDate', values.startDate);
-      formData.append('dueDate', values.dueDate);
-      formData.append('priority', values.priority);
-      formData.append('category', values.category);
-      formData.append('description', values.description);
-      formData.append('building', values.building);
-      formData.append('asset', values.asset);
-      formData.append('assigneeType', values.assigneeType);
-      formData.append('assignedTo', values.assignedTo);
-      formData.append('vendor', values.vendor);
-      formData.append('recurringWO', recurringWO);
+      formData.append("title", values.title);
+      formData.append("startDate", values.startDate);
+      formData.append("dueDate", values.dueDate);
+      formData.append("priority", values.priority);
+      formData.append("category", values.category);
+      formData.append("description", values.description);
+      formData.append("building", values.building);
+      formData.append("asset", values.asset || "");
+      formData.append("assigneeType", values.assigneeType);
+      formData.append("assignedTo", values.assignedTo);
+      formData.append("vendor", values.vendor || "");
+      formData.append("isRecurring", isRecurring);
 
-      if (photo) {
-        formData.append('photo', photo);
+      if (recurringWO !== '- Select -') {
+        formData.append("recurringWO", recurringWO);
       }
-
+      
       tasks.forEach((task, index) => {
         formData.append(`tasks[${index}][taskName]`, task.taskName);
         formData.append(`tasks[${index}][taskType]`, task.taskType);
       });
-
+      
       parts.forEach((part, index) => {
-        formData.append(`parts[${index}][partName]`, part.partName);
+        formData.append(`parts[${index}][partId]`, part.partId);
         formData.append(`parts[${index}][quantity]`, part.quantity);
       });
 
-      const response = await fetch('/api/workorders', {
-        method: 'POST',
+      if (photo) {
+        formData.append("photo", photo);
+      }
+
+      const response = await api.post("/workorders", formData, {
         headers: {
-          Authorization: `Bearer ${localStorage.getItem('token')}`
+          Authorization: `Bearer ${localStorage.getItem("token")}`,
+          "Content-Type": "multipart/form-data",
         },
-        body: formData
       });
 
-      const result = await response.json();
-      if (result.success) {
-        alert('Work order added!');
+      if (response.data.success) {
+        toast.success("Work order added!");
+        closeModal();
+        
+        // Reset all form states
+        resetForm();
+        setTasks([]);
+        setParts([]);
+        setNewTask({ taskName: "", taskType: "" });
+        setNewPart({ partId: "", quantity: 1 });
+        setPhoto(null);
+        setIsRecurring(false);
+        setRecurringWO("- Select -");
+        setSelectedBuilding('');
+        setAssets([]);
       } else {
-        alert(result.message || 'Failed to create work order');
+        const errorMessage = response.data.message || "Failed to create work order";
+        toast.error(errorMessage);
       }
     } catch (err) {
       console.error(err);
-      alert('Error submitting work order');
+      const errorMessage =
+        err.response?.data?.message ||
+        err.response?.data?.errors?.map((e) => e.msg).join(", ") ||
+        "Error submitting work order";
+      toast.error(errorMessage);
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const addNewCategory = async () => {
+    try {
+      await api.post('/categories', { name: newCategory, type: 'workOrder' });
+      setNewCategory('');
+      setOpenCategoryModal(false);
+      toast.success('Category added successfully');
+      
+      // Refresh categories
+      const res = await api.get('/categories');
+      if (res.data.success) {
+        const workOrderCategories = res.data.categories.filter((category) => category.type === 'workOrder');
+        setCategories(workOrderCategories);
+      }
+    } catch (err) {
+      console.error('Failed to add category', err);
+      toast.error('Failed to add category');
     }
   };
 
@@ -244,8 +309,8 @@ export default function WorkOrderRegister() {
         })}
         onSubmit={handleSubmit}
       >
-        {({ errors, handleBlur, handleChange, touched, values, setFieldValue }) => (
-          <form noValidate>
+        {({ errors, handleBlur, handleChange, touched, values, setFieldValue, handleSubmit, isSubmitting }) => (
+          <form noValidate onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
@@ -268,6 +333,7 @@ export default function WorkOrderRegister() {
                   </FormHelperText>
                 )}
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="start-date-signup">Start Date*</InputLabel>
@@ -288,6 +354,7 @@ export default function WorkOrderRegister() {
                   </FormHelperText>
                 )}
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="due-date-signup">Due Date*</InputLabel>
@@ -308,10 +375,11 @@ export default function WorkOrderRegister() {
                   </FormHelperText>
                 )}
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="priority-signup">Priority*</InputLabel>
-                  <OutlinedInput
+                  <TextField
                     id="priority-signup"
                     value={values.priority}
                     name="priority"
@@ -320,18 +388,15 @@ export default function WorkOrderRegister() {
                     select
                     fullWidth
                     error={Boolean(touched.priority && errors.priority)}
+                    helperText={touched.priority && errors.priority}
                   >
                     <MenuItem value="Low">Low</MenuItem>
                     <MenuItem value="Medium">Medium</MenuItem>
                     <MenuItem value="High">High</MenuItem>
-                  </OutlinedInput>
+                  </TextField>
                 </Stack>
-                {touched.priority && errors.priority && (
-                  <FormHelperText error id="helper-text-priority-signup">
-                    {errors.priority}
-                  </FormHelperText>
-                )}
               </Grid>
+              
               <Grid item xs={12} md={6}>
                 <Stack sx={{ gap: 1 }} direction="row" alignItems="start">
                   <TextField
@@ -362,6 +427,7 @@ export default function WorkOrderRegister() {
                   </IconButton>
                 </Stack>
               </Grid>
+              
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="description-signup">Description*</InputLabel>
@@ -383,6 +449,7 @@ export default function WorkOrderRegister() {
                   </FormHelperText>
                 )}
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }} alignItems="start">
                   <InputLabel htmlFor="building-signup">Building*</InputLabel>
@@ -410,6 +477,7 @@ export default function WorkOrderRegister() {
                   </TextField>
                 </Stack>
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="asset-signup">Asset*</InputLabel>
@@ -434,6 +502,7 @@ export default function WorkOrderRegister() {
                   </TextField>
                 </Stack>
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="assignee-type-signup">Assignee Type*</InputLabel>
@@ -445,7 +514,7 @@ export default function WorkOrderRegister() {
                     onBlur={handleBlur}
                     onChange={(e) => {
                       handleChange(e);
-                      setFieldValue('assignedTo', ''); // Reset assignedTo when type changes
+                      setFieldValue('assignedTo', '');
                     }}
                     fullWidth
                     error={Boolean(touched.assigneeType && errors.assigneeType)}
@@ -455,12 +524,8 @@ export default function WorkOrderRegister() {
                     <MenuItem value="Team">Team</MenuItem>
                   </TextField>
                 </Stack>
-                {touched.assigneeType && errors.assigneeType && (
-                  <FormHelperText error id="helper-text-assignee-type-signup">
-                    {errors.assigneeType}
-                  </FormHelperText>
-                )}
               </Grid>
+              
               <Grid size={{ xs: 12, md: 6 }}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="assigned-to-signup">Assigned To*</InputLabel>
@@ -479,18 +544,18 @@ export default function WorkOrderRegister() {
                     {values.assigneeType === 'Individual'
                       ? users.map((user) => (
                           <MenuItem key={user._id} value={user._id}>
-                            {user.name || user.email || user._id} {/* Adjust based on your user model */}
+                            {user.name || user.email || user._id}
                           </MenuItem>
                         ))
                       : teams.map((team) => (
                           <MenuItem key={team._id} value={team._id}>
-                            {team.name || team._id} {/* Adjust based on your team model */}
+                            {team.name || team._id}
                           </MenuItem>
                         ))}
                   </TextField>
                 </Stack>
-        
               </Grid>
+              
               <Grid item xs={12}>
                 <Stack sx={{ gap: 1 }} direction="row" alignItems="start">
                   <TextField
@@ -514,6 +579,7 @@ export default function WorkOrderRegister() {
                   </TextField>
                 </Stack>
               </Grid>
+              
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
                   <FormControlLabel
@@ -522,6 +588,7 @@ export default function WorkOrderRegister() {
                   />
                 </Stack>
               </Grid>
+              
               {isRecurring && (
                 <Grid item xs={12} md={6}>
                   <Stack sx={{ gap: 1 }}>
@@ -547,6 +614,7 @@ export default function WorkOrderRegister() {
                   </Stack>
                 </Grid>
               )}
+              
               <Grid item xs={12} md={6}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel htmlFor="upload-photo">Upload Photo</InputLabel>
@@ -564,6 +632,7 @@ export default function WorkOrderRegister() {
                   />
                 </Stack>
               </Grid>
+              
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel>Tasks</InputLabel>
@@ -607,30 +676,50 @@ export default function WorkOrderRegister() {
                   ))}
                 </Stack>
               </Grid>
+              
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
                   <InputLabel>Parts</InputLabel>
                   <Grid container spacing={1} alignItems="center">
                     <Grid item xs={12} md={5}>
-                      <OutlinedInput
-                        value={newPart.partName}
-                        onChange={(e) => setNewPart({ ...newPart, partName: e.target.value })}
-                        placeholder="Part Name"
+                      <TextField
+                        select
+                        value={newPart.partId || ""}
+                        onChange={(e) => setNewPart({ ...newPart, partId: e.target.value })}
+                        label="Part Name"
                         fullWidth
-                      />
+                        helperText="Select a part for the work order"
+                      >
+                        <MenuItem value="">- Select -</MenuItem>
+                        {allParts.map((part) => (
+                          <MenuItem key={part._id} value={part._id}>
+                            {part.partName} (Qty: {part.availableQuantity})
+                          </MenuItem>
+                        ))}
+                      </TextField>
                     </Grid>
                     <Grid item xs={12} md={5}>
                       <OutlinedInput
                         type="number"
-                        value={newPart.quantity}
-                        onChange={(e) => setNewPart({ ...newPart, quantity: parseInt(e.target.value) || 1 })}
+                        value={newPart.quantity === 0 ? "" : newPart.quantity}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          setNewPart({
+                            ...newPart,
+                            quantity: value === "" ? 0 : parseInt(value) || 0,
+                          });
+                        }}
                         placeholder="Quantity"
                         fullWidth
                         inputProps={{ min: 1 }}
                       />
                     </Grid>
                     <Grid item xs={12} md={2}>
-                      <IconButton onClick={handleAddPart} color="primary">
+                      <IconButton
+                        onClick={handleAddPart}
+                        color="primary"
+                        disabled={!newPart.partId || newPart.quantity < 1}
+                      >
                         <AddIcon />
                       </IconButton>
                     </Grid>
@@ -638,7 +727,13 @@ export default function WorkOrderRegister() {
                   {parts.map((part, index) => (
                     <Grid container spacing={1} alignItems="center" key={index} sx={{ mt: 1 }}>
                       <Grid item xs={12} md={5}>
-                        <OutlinedInput value={part.partName} disabled fullWidth />
+                        <OutlinedInput
+                          value={
+                            part.partName || allParts.find((p) => p._id === part.partId)?.partName || "N/A"
+                          }
+                          disabled
+                          fullWidth
+                        />
                       </Grid>
                       <Grid item xs={12} md={5}>
                         <OutlinedInput value={part.quantity} disabled fullWidth />
@@ -652,10 +747,18 @@ export default function WorkOrderRegister() {
                   ))}
                 </Stack>
               </Grid>
+              
               <Grid size={12}>
                 <AnimateButton>
-                  <Button type="submit" fullWidth size="large" variant="contained" color="primary">
-                    Add Work Order
+                  <Button 
+                    type="submit" 
+                    fullWidth 
+                    size="large" 
+                    variant="contained" 
+                    color="primary"
+                    disabled={isSubmitting}
+                  >
+                    {isSubmitting ? 'Adding Work Order...' : 'Add Work Order'}
                   </Button>
                 </AnimateButton>
               </Grid>
@@ -663,6 +766,7 @@ export default function WorkOrderRegister() {
           </form>
         )}
       </Formik>
+      
       <Dialog open={openCategoryModal} onClose={() => setOpenCategoryModal(false)}>
         <DialogTitle>Add New Category</DialogTitle>
         <DialogContent>
@@ -678,22 +782,7 @@ export default function WorkOrderRegister() {
         </DialogContent>
         <DialogActions>
           <Button onClick={() => setOpenCategoryModal(false)}>Cancel</Button>
-          <Button
-            onClick={async () => {
-              try {
-                await axios.post('http://localhost:5000/api/categories', { name: newCategory, type: 'workOrder' });
-                setNewCategory('');
-                setOpenCategoryModal(false);
-                toast.success('Category added successfully');
-                const res = await axios.get('http://localhost:5000/api/categories');
-                const workOrderCategories = res.data.categories.filter((category) => category.type === 'workOrder');
-                setCategories(workOrderCategories);
-              } catch (err) {
-                toast.error('Failed to add category');
-              }
-            }}
-            variant="contained"
-          >
+          <Button onClick={addNewCategory} variant="contained">
             Submit
           </Button>
         </DialogActions>

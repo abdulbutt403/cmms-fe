@@ -22,7 +22,7 @@ export default function WorkOrderDialog({openAddModal, handleCloseAddModal}) {
               Cancel
             </Typography>
           </Stack>
-          <FirebaseRegister />
+          <FirebaseRegister closeModal={handleCloseAddModal} />
       </DialogContent>
   </Dialog>
 

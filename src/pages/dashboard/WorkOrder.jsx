@@ -33,108 +33,7 @@ import DeleteOutlined from '@ant-design/icons/DeleteOutlined';
 import UnorderedListOutlined from '@ant-design/icons/UnorderedListOutlined';
 import ProjectOutlined from '@ant-design/icons/ProjectOutlined';
 import WorkOrderDialog from '../../components/dialogs/AddOrder';
-import { minWidth } from '@mui/system';
-
-
-// Mock Data
-const MOCK_WORK_ORDERS = [
-  {
-    _id: '1',
-    title: 'Pump Inspection',
-    category: 'Parts',
-    asset: 'Motor - area 1',
-    priority: 'Medium',
-    status: 'In Progress',
-    startDate: '2025-04-10',
-    dueDate: '2025-04-05',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building A',
-    description: 'Inspection of pump system for maintenance',
-    assigneeType: 'User',
-    assignedTo: { firstName: 'John', lastName: 'Doe' }
-  },
-  {
-    _id: '2',
-    title: 'Inspection',
-    category: 'Parts',
-    asset: 'Motor',
-    priority: 'High',
-    status: 'Open',
-    startDate: '2025-03-06',
-    dueDate: '2025-04-11',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building B',
-    description: 'Regular inspection of motor',
-    assigneeType: 'Team',
-    assignedTo: { name: 'Maintenance Team' }
-  },
-  {
-    _id: '3',
-    title: 'Filter Change',
-    category: 'Maintenance',
-    asset: 'HVAC System',
-    priority: 'Low',
-    status: 'Open',
-    startDate: '2025-03-15',
-    dueDate: '2025-05-01',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building C',
-    description: 'Change filters in HVAC system',
-    assigneeType: 'User',
-    assignedTo: { firstName: 'Sarah', lastName: 'Johnson' }
-  },
-  {
-    _id: '4',
-    title: 'Filter Change',
-    category: 'Maintenance',
-    asset: 'HVAC System',
-    priority: 'Low',
-    status: 'On Hold',
-    startDate: '2025-03-15',
-    dueDate: '2025-05-01',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building C',
-    description: 'Change filters in HVAC system',
-    assigneeType: 'User',
-    assignedTo: { firstName: 'Sarah', lastName: 'Johnson' }
-  },
-  {
-    _id: '5',
-    title: 'Filter Change',
-    category: 'Maintenance',
-    asset: 'HVAC System',
-    priority: 'Low',
-    status: 'On Hold',
-    startDate: '2025-03-15',
-    dueDate: '2025-05-01',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building C',
-    description: 'Change filters in HVAC system',
-    assigneeType: 'User',
-    assignedTo: { firstName: 'Sarah', lastName: 'Johnson' }
-  },
-  {
-    _id: '6',
-    title: 'Filter Change',
-    category: 'Maintenance',
-    asset: 'HVAC System',
-    priority: 'Low',
-    status: 'Completed',
-    startDate: '2025-03-15',
-    dueDate: '2025-05-01',
-    submittedBy: { firstName: 'Usama', lastName: '' },
-    submittedAt: '2025-03-06',
-    building: 'Building C',
-    description: 'Change filters in HVAC system',
-    assigneeType: 'User',
-    assignedTo: { firstName: 'Sarah', lastName: 'Johnson' }
-  }
-];
+import api from '../../api/api';
 
 const priorityColors = {
   Low: { color: '#10b981', bg: '#ecfdf5' },
@@ -150,7 +49,6 @@ const statusColors = {
   Closed: { color: '#6b7280', bg: '#f9fafb' }
 };
 
-// Column configurations with beautiful gradients
 const statusColumns = [
   { 
     key: 'Open', 
@@ -185,23 +83,35 @@ const statusColumns = [
 
 export default function WorkOrder() {
   const theme = useTheme();
-  const [workOrders, setWorkOrders] = useState(MOCK_WORK_ORDERS);
+  const [workOrders, setWorkOrders] = useState([]);
   const [viewMode, setViewMode] = useState('board');
   const [openAddModal, setOpenAddModal] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterCategory, setFilterCategory] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
   useEffect(() => {
     const fetchWorkOrders = async () => {
       try {
-        setWorkOrders(MOCK_WORK_ORDERS);
-      } catch (error) {
-        console.error('Error fetching work orders:', error);
+        setLoading(true);
+        const response = await api.get('/workorders');
+        if (response.data.success) {
+          setWorkOrders(response.data.data); // Assuming data is in response.data.data
+        } else {
+          setError('Failed to fetch work orders');
+        }
+      } catch (err) {
+        setError(err.message || 'Server error');
+        console.error('Fetch work orders error:', err);
+      } finally {
+        setLoading(false);
       }
     };
+
     fetchWorkOrders();
-  }, []);
+  }, []); // Fetch on mount
 
   const handleViewModeChange = (event, newValue) => {
     setViewMode(newValue);
@@ -219,11 +129,17 @@ export default function WorkOrder() {
 
     const { source, destination } = result;
     const updatedWorkOrders = [...workOrders];
-    const [reorderedItem] = updatedWorkOrders.filter((wo) => wo._id === result.draggableId);
+    const [reorderedItem] = updatedWorkOrders.splice(source.index, 1);
 
     if (reorderedItem) {
       reorderedItem.status = statusColumns[destination.droppableId].key;
+      updatedWorkOrders.splice(destination.index, 0, reorderedItem);
       setWorkOrders(updatedWorkOrders);
+
+      // Optional: Send updated status to backend
+      api.put(`/workorders/${reorderedItem._id}`, { status: reorderedItem.status }, {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
+      }).catch(err => console.error('Update status error:', err));
     }
   };
 
@@ -240,7 +156,9 @@ export default function WorkOrder() {
     setFilterCategory(event.target.value);
   };
 
-  const filteredWorkOrders = filterCategory ? workOrders.filter((wo) => wo.category === filterCategory) : workOrders;
+  const filteredWorkOrders = filterCategory
+    ? workOrders.filter((wo) => wo.category === filterCategory)
+    : workOrders;
 
   const CustomChip = ({ label, type, value }) => {
     const colors = type === 'priority' ? priorityColors[value] : statusColors[value];
@@ -255,25 +173,22 @@ export default function WorkOrder() {
           fontWeight: 500,
           fontSize: '0.75rem',
           height: '24px',
-          '& .MuiChip-label': {
-            px: 1.5
-          }
+          '& .MuiChip-label': { px: 1.5 }
         }}
       />
     );
   };
 
+  if (loading) return <Typography>Loading...</Typography>;
+  if (error) return <Typography color="error">{error}</Typography>;
+
   return (
-    <>
-    <Box sx={{ 
-      p: 4, 
-      minHeight: '100vh'
-    }}>
+    <Box sx={{ p: 4, minHeight: '100vh' }}>
       {/* Header */}
       <Box sx={{ mb: 4 }}>
-        <Typography 
-          variant="h3" 
-          sx={{ 
+        <Typography
+          variant="h3"
+          sx={{
             mb: 1,
             fontWeight: 600,
             color: '#1f2937',
@@ -282,9 +197,9 @@ export default function WorkOrder() {
         >
           Work Orders
         </Typography>
-        <Typography 
-          variant="body1" 
-          sx={{ 
+        <Typography
+          variant="body1"
+          sx={{
             color: '#6b7280',
             fontSize: '1rem'
           }}
@@ -294,17 +209,10 @@ export default function WorkOrder() {
       </Box>
 
       {/* Controls */}
-      <Box sx={{ 
-        display: 'flex', 
-        justifyContent: 'space-between', 
-        alignItems: 'center',
-        mb: 4,
-        flexWrap: 'wrap',
-        gap: 2
-      }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 4, flexWrap: 'wrap', gap: 2 }}>
         <Box sx={{ display: 'flex', alignItems: 'center', gap: 3 }}>
-          <Tabs 
-            value={viewMode} 
+          <Tabs
+            value={viewMode}
             onChange={handleViewModeChange}
             sx={{
               '& .MuiTab-root': {
@@ -314,9 +222,7 @@ export default function WorkOrder() {
                 fontSize: '0.875rem',
                 fontWeight: 500,
                 color: '#6b7280',
-                '&.Mui-selected': {
-                  color: '#3b82f6'
-                }
+                '&.Mui-selected': { color: '#3b82f6' }
               },
               '& .MuiTabs-indicator': {
                 backgroundColor: '#3b82f6',
@@ -325,40 +231,36 @@ export default function WorkOrder() {
               }
             }}
           >
-            <Tab 
-              icon={<UnorderedListOutlined style={{ fontSize: 18 }} />} 
-              value="table" 
+            <Tab
+              icon={<UnorderedListOutlined style={{ fontSize: 18 }} />}
+              value="table"
               label="Table"
               iconPosition="start"
             />
-            <Tab 
-              icon={<ProjectOutlined style={{ fontSize: 18 }} />} 
-              value="board" 
+            <Tab
+              icon={<ProjectOutlined style={{ fontSize: 18 }} />}
+              value="board"
               label="Board"
               iconPosition="start"
             />
           </Tabs>
 
-          <FormControl 
+          <FormControl
             size="small"
-            sx={{ 
+            sx={{
               minWidth: 200,
               '& .MuiOutlinedInput-root': {
                 backgroundColor: 'white',
                 borderRadius: 2,
-                '& fieldset': {
-                  borderColor: '#e5e7eb'
-                },
-                '&:hover fieldset': {
-                  borderColor: '#d1d5db'
-                }
+                '& fieldset': { borderColor: '#e5e7eb' },
+                '&:hover fieldset': { borderColor: '#d1d5db' }
               }
             }}
           >
             <InputLabel>Filter Category</InputLabel>
-            <Select 
-              value={filterCategory} 
-              onChange={handleFilterChange} 
+            <Select
+              value={filterCategory}
+              onChange={handleFilterChange}
               label="Filter Category"
             >
               <MenuItem value="">All Categories</MenuItem>
@@ -370,9 +272,9 @@ export default function WorkOrder() {
           </FormControl>
         </Box>
 
-        <Button 
-          variant="contained" 
-          startIcon={<PlusOutlined />} 
+        <Button
+          variant="contained"
+          startIcon={<PlusOutlined />}
           onClick={handleOpenAddModal}
           sx={{
             backgroundColor: '#3b82f6',
@@ -395,7 +297,7 @@ export default function WorkOrder() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <Card sx={{ 
+        <Card sx={{
           borderRadius: 3,
           boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
           border: '1px solid #f3f4f6'
@@ -417,35 +319,33 @@ export default function WorkOrder() {
               </TableHead>
               <TableBody>
                 {filteredWorkOrders.slice(page * rowsPerPage, page * rowsPerPage + rowsPerPage).map((workOrder) => (
-                  <TableRow 
+                  <TableRow
                     key={workOrder._id}
                     sx={{
-                      '&:hover': {
-                        backgroundColor: '#f9fafb'
-                      }
+                      '&:hover': { backgroundColor: '#f9fafb' }
                     }}
                   >
                     <TableCell sx={{ fontWeight: 500 }}>{workOrder.title}</TableCell>
                     <TableCell>{workOrder.category}</TableCell>
                     <TableCell>{workOrder.asset}</TableCell>
                     <TableCell>
-                      <CustomChip 
-                        label={workOrder.priority} 
-                        type="priority" 
-                        value={workOrder.priority} 
+                      <CustomChip
+                        label={workOrder.priority}
+                        type="priority"
+                        value={workOrder.priority}
                       />
                     </TableCell>
                     <TableCell>
-                      <CustomChip 
-                        label={workOrder.status} 
-                        type="status" 
-                        value={workOrder.status} 
+                      <CustomChip
+                        label={workOrder.status}
+                        type="status"
+                        value={workOrder.status}
                       />
                     </TableCell>
                     <TableCell>{workOrder.startDate}</TableCell>
                     <TableCell>{workOrder.dueDate}</TableCell>
                     <TableCell>
-                      {workOrder.submittedBy.firstName} {workOrder.submittedBy.lastName}
+                      {workOrder.submittedBy.firstName} {workOrder.submittedBy.lastName || ''}
                     </TableCell>
                     <TableCell>
                       <IconButton size="small" sx={{ mr: 1 }}>
@@ -480,7 +380,7 @@ export default function WorkOrder() {
               const columnWorkOrders = filteredWorkOrders.filter((wo) => wo.status === column.key);
 
               return (
-                <Grid item xs={12} sm={6} md={3} key={column.key} style={{minWidth: '23%'}}>
+                <Grid item xs={12} sm={6} md={3} key={column.key} style={{ width: '23%' }}>
                   <Box
                     sx={{
                       background: column.gradient,
@@ -550,7 +450,7 @@ export default function WorkOrder() {
                                     mb: 2,
                                     backgroundColor: 'white',
                                     borderRadius: 2,
-                                    boxShadow: snapshot.isDragging 
+                                    boxShadow: snapshot.isDragging
                                       ? '0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05)'
                                       : '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
                                     border: '1px solid #f3f4f6',
@@ -564,9 +464,9 @@ export default function WorkOrder() {
                                   <CardContent sx={{ p: 2.5 }}>
                                     {/* Card Header */}
                                     <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', mb: 2 }}>
-                                      <Typography 
-                                        variant="h6" 
-                                        sx={{ 
+                                      <Typography
+                                        variant="h6"
+                                        sx={{
                                           fontWeight: 600,
                                           color: '#1f2937',
                                           fontSize: '1rem',
@@ -577,17 +477,17 @@ export default function WorkOrder() {
                                       >
                                         {workOrder.title}
                                       </Typography>
-                                      <CustomChip 
-                                        label={workOrder.priority} 
-                                        type="priority" 
-                                        value={workOrder.priority} 
+                                      <CustomChip
+                                        label={workOrder.priority}
+                                        type="priority"
+                                        value={workOrder.priority}
                                       />
                                     </Box>
 
                                     {/* Asset Info */}
-                                    <Typography 
-                                      variant="body2" 
-                                      sx={{ 
+                                    <Typography
+                                      variant="body2"
+                                      sx={{
                                         color: '#6b7280',
                                         mb: 2,
                                         fontSize: '0.875rem'
@@ -613,19 +513,19 @@ export default function WorkOrder() {
                                         </Typography>
                                         <Typography variant="body2" sx={{ color: '#6b7280', ml: 1 }}>
                                           {workOrder.assigneeType === 'User'
-                                            ? `${workOrder.assignedTo.firstName} ${workOrder.assignedTo.lastName}`
-                                            : workOrder.assignedTo.name}
+                                            ? `${workOrder.assignedTo.firstName || ''} ${workOrder.assignedTo.lastName || ''}`.trim()
+                                            : workOrder.assignedTo.name || 'N/A'}
                                         </Typography>
                                       </Box>
                                     </Box>
 
                                     {/* Actions */}
                                     <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1, borderTop: '1px solid #f3f4f6' }}>
-                                      <IconButton 
+                                      <IconButton
                                         size="small"
-                                        sx={{ 
+                                        sx={{
                                           color: '#6b7280',
-                                          '&:hover': { 
+                                          '&:hover': {
                                             backgroundColor: '#f3f4f6',
                                             color: '#374151'
                                           }
@@ -633,11 +533,11 @@ export default function WorkOrder() {
                                       >
                                         <EditOutlined />
                                       </IconButton>
-                                      <IconButton 
+                                      <IconButton
                                         size="small"
-                                        sx={{ 
+                                        sx={{
                                           color: '#6b7280',
-                                          '&:hover': { 
+                                          '&:hover': {
                                             backgroundColor: '#fef2f2',
                                             color: '#ef4444'
                                           }
@@ -662,11 +562,10 @@ export default function WorkOrder() {
           </Grid>
         </DragDropContext>
       )}
+      <WorkOrderDialog
+        openAddModal={openAddModal}
+        handleCloseAddModal={handleCloseAddModal}
+      />
     </Box>
-        <WorkOrderDialog
-  openAddModal={openAddModal}
-  handleCloseAddModal={handleCloseAddModal}
-/>
-</>
   );
 }
