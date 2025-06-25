@@ -15,7 +15,7 @@ import AnimateButton from 'components/@extended/AnimateButton';
 import api from '../../../api/api';
 import toast from 'react-hot-toast';
 
-export default function UserTeamForm({formType}) {
+export default function UserTeamForm({formType, closeModal}) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -24,6 +24,7 @@ export default function UserTeamForm({formType}) {
         const res = await api.get('/users');
         if (res.data.success) {
           setUsers(res.data.data);
+          console.log('Users loaded successfully:', res.data.data);
         }
       } catch (err) {
         console.error('Failed to load users', err);
@@ -55,12 +56,14 @@ export default function UserTeamForm({formType}) {
         const res = await api.post('/users', values);
         if (res.data.success) {
           toast.success('User added successfully!');
+          closeModal(); // Close modal after successful submission
         }
       } else {
         const { teamName, members } = values;
         const res = await api.post('/teams', { name: teamName, members });
         if (res.data.success) {
           toast.success('Team added successfully!');
+          closeModal(); // Close modal after successful submission
         }
       }
     } catch (err) {
@@ -311,11 +314,14 @@ export default function UserTeamForm({formType}) {
         multiple: true,
       }}
     >
-      {users.map((user) => (
-        <MenuItem key={user._id} value={user._id}>
-          {`${user.firstName} ${user.lastName} (${user.email})`}
-        </MenuItem>
-      ))}
+      {users
+        .filter((user) => user.userRole === 'technician')
+        .map((user) => (
+          <MenuItem key={user._id} value={user._id}>
+            {`${user.firstName} ${user.lastName} (${user.email})`}
+          </MenuItem>
+        ))}
+
     </TextField>
   </Stack>
 </Grid>

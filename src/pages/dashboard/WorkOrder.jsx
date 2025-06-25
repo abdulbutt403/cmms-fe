@@ -50,30 +50,30 @@ const statusColors = {
 };
 
 const statusColumns = [
-  { 
-    key: 'Open', 
+  {
+    key: 'Open',
     label: 'Open',
     gradient: 'linear-gradient(135deg, #fee2e2 0%, #fecaca 100%)',
     borderColor: '#fca5a5',
     headerBg: '#fef2f2'
   },
-  { 
-    key: 'In Progress', 
+  {
+    key: 'In Progress',
     label: 'In Progress',
     gradient: 'linear-gradient(135deg, #dbeafe 0%, #bfdbfe 100%)',
     borderColor: '#93c5fd',
     minWidth: 500,
     headerBg: '#eff6ff'
   },
-  { 
-    key: 'On Hold', 
+  {
+    key: 'On Hold',
     label: 'On Hold',
     gradient: 'linear-gradient(135deg, #ede9fe 0%, #ddd6fe 100%)',
     borderColor: '#c4b5fd',
     headerBg: '#f5f3ff'
   },
-  { 
-    key: 'Completed', 
+  {
+    key: 'Completed',
     label: 'Completed',
     gradient: 'linear-gradient(135deg, #d1fae5 0%, #a7f3d0 100%)',
     borderColor: '#6ee7b7',
@@ -91,26 +91,11 @@ export default function WorkOrder() {
   const [filterCategory, setFilterCategory] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [categories, setCategories] = useState([]);
 
   useEffect(() => {
-    const fetchWorkOrders = async () => {
-      try {
-        setLoading(true);
-        const response = await api.get('/workorders');
-        if (response.data.success) {
-          setWorkOrders(response.data.data); // Assuming data is in response.data.data
-        } else {
-          setError('Failed to fetch work orders');
-        }
-      } catch (err) {
-        setError(err.message || 'Server error');
-        console.error('Fetch work orders error:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchWorkOrders();
+    fetchCategories();
   }, []); // Fetch on mount
 
   const handleViewModeChange = (event, newValue) => {
@@ -122,6 +107,37 @@ export default function WorkOrder() {
   };
   const handleCloseAddModal = () => {
     setOpenAddModal(false);
+  };
+
+  const fetchWorkOrders = async () => {
+    try {
+      setLoading(true);
+      const response = await api.get('/workorders', {
+        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+      });
+      if (response.data.success) {
+        setWorkOrders(response.data.data); // Assuming data is in response.data.data
+      } else {
+        setError('Failed to fetch work orders');
+      }
+    } catch (err) {
+      setError(err.message || 'Server error');
+      console.error('Fetch work orders error:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const fetchCategories = async () => {
+    try {
+      const res = await api.get('/categories');
+      if (res.data.success) {
+        const workOrderCategories = res.data.categories.filter((category) => category.type === 'workOrder');
+        setCategories(workOrderCategories);
+      }
+    } catch (err) {
+      console.error('Failed to load categories', err);
+    }
   };
 
   const handleDragEnd = (result) => {
@@ -137,9 +153,15 @@ export default function WorkOrder() {
       setWorkOrders(updatedWorkOrders);
 
       // Optional: Send updated status to backend
-      api.put(`/workorders/${reorderedItem._id}`, { status: reorderedItem.status }, {
-        headers: { Authorization: `Bearer ${localStorage.getItem('token')}` },
-      }).catch(err => console.error('Update status error:', err));
+      api
+        .put(
+          `/workorders/${reorderedItem._id}`,
+          { status: reorderedItem.status },
+          {
+            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+          }
+        )
+        .catch((err) => console.error('Update status error:', err));
     }
   };
 
@@ -156,9 +178,7 @@ export default function WorkOrder() {
     setFilterCategory(event.target.value);
   };
 
-  const filteredWorkOrders = filterCategory
-    ? workOrders.filter((wo) => wo.category === filterCategory)
-    : workOrders;
+  const filteredWorkOrders = filterCategory ? workOrders.filter((wo) => wo.category === filterCategory) : workOrders;
 
   const CustomChip = ({ label, type, value }) => {
     const colors = type === 'priority' ? priorityColors[value] : statusColors[value];
@@ -231,18 +251,8 @@ export default function WorkOrder() {
               }
             }}
           >
-            <Tab
-              icon={<UnorderedListOutlined style={{ fontSize: 18 }} />}
-              value="table"
-              label="Table"
-              iconPosition="start"
-            />
-            <Tab
-              icon={<ProjectOutlined style={{ fontSize: 18 }} />}
-              value="board"
-              label="Board"
-              iconPosition="start"
-            />
+            <Tab icon={<UnorderedListOutlined style={{ fontSize: 18 }} />} value="table" label="Table" iconPosition="start" />
+            <Tab icon={<ProjectOutlined style={{ fontSize: 18 }} />} value="board" label="Board" iconPosition="start" />
           </Tabs>
 
           <FormControl
@@ -257,17 +267,15 @@ export default function WorkOrder() {
               }
             }}
           >
-            <InputLabel>Filter Category</InputLabel>
-            <Select
-              value={filterCategory}
-              onChange={handleFilterChange}
-              label="Filter Category"
-            >
-              <MenuItem value="">All Categories</MenuItem>
-              <MenuItem value="Parts">Parts</MenuItem>
-              <MenuItem value="Maintenance">Maintenance</MenuItem>
-              <MenuItem value="Repair">Repair</MenuItem>
-              <MenuItem value="Installation">Installation</MenuItem>
+            <Select value={filterCategory} onChange={handleFilterChange} label="Filter Category" displayEmpty>
+              <MenuItem value="">
+                <em>All Categories</em>
+              </MenuItem>
+              {categories.map((cat) => (
+                <MenuItem key={cat._id} value={cat.name}>
+                  {cat.name}
+                </MenuItem>
+              ))}
             </Select>
           </FormControl>
         </Box>
@@ -297,11 +305,13 @@ export default function WorkOrder() {
 
       {/* Table View */}
       {viewMode === 'table' && (
-        <Card sx={{
-          borderRadius: 3,
-          boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
-          border: '1px solid #f3f4f6'
-        }}>
+        <Card
+          sx={{
+            borderRadius: 3,
+            boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+            border: '1px solid #f3f4f6'
+          }}
+        >
           <TableContainer>
             <Table>
               <TableHead>
@@ -329,18 +339,10 @@ export default function WorkOrder() {
                     <TableCell>{workOrder.category}</TableCell>
                     <TableCell>{workOrder.asset}</TableCell>
                     <TableCell>
-                      <CustomChip
-                        label={workOrder.priority}
-                        type="priority"
-                        value={workOrder.priority}
-                      />
+                      <CustomChip label={workOrder.priority} type="priority" value={workOrder.priority} />
                     </TableCell>
                     <TableCell>
-                      <CustomChip
-                        label={workOrder.status}
-                        type="status"
-                        value={workOrder.status}
-                      />
+                      <CustomChip label={workOrder.status} type="status" value={workOrder.status} />
                     </TableCell>
                     <TableCell>{workOrder.startDate}</TableCell>
                     <TableCell>{workOrder.dueDate}</TableCell>
@@ -477,11 +479,7 @@ export default function WorkOrder() {
                                       >
                                         {workOrder.title}
                                       </Typography>
-                                      <CustomChip
-                                        label={workOrder.priority}
-                                        type="priority"
-                                        value={workOrder.priority}
-                                      />
+                                      <CustomChip label={workOrder.priority} type="priority" value={workOrder.priority} />
                                     </Box>
 
                                     {/* Asset Info */}
@@ -506,7 +504,7 @@ export default function WorkOrder() {
                                           {workOrder.dueDate}
                                         </Typography>
                                       </Box>
-                                      
+
                                       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
                                         <Typography variant="body2" sx={{ color: '#374151', fontWeight: 500, minWidth: '60px' }}>
                                           Assignee:
@@ -520,7 +518,9 @@ export default function WorkOrder() {
                                     </Box>
 
                                     {/* Actions */}
-                                    <Box sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1, borderTop: '1px solid #f3f4f6' }}>
+                                    <Box
+                                      sx={{ display: 'flex', justifyContent: 'flex-end', gap: 1, pt: 1, borderTop: '1px solid #f3f4f6' }}
+                                    >
                                       <IconButton
                                         size="small"
                                         sx={{
@@ -562,10 +562,7 @@ export default function WorkOrder() {
           </Grid>
         </DragDropContext>
       )}
-      <WorkOrderDialog
-        openAddModal={openAddModal}
-        handleCloseAddModal={handleCloseAddModal}
-      />
+      <WorkOrderDialog openAddModal={openAddModal} handleCloseAddModal={handleCloseAddModal} />
     </Box>
   );
 }

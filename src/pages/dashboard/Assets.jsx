@@ -37,7 +37,12 @@ export default function AssetsTable() {
   const navigate = useNavigate(); // Initialize useNavigate
 
   useEffect(() => {
-    const fetchAssets = async () => {
+ 
+    fetchAssets();
+  }, []);
+
+
+     const fetchAssets = async () => {
       try {
         const res = await api.get('/assets');
         if (res.data.success) {
@@ -47,8 +52,6 @@ export default function AssetsTable() {
         console.error('Failed to fetch assets', err);
       }
     };
-    fetchAssets();
-  }, []);
 
   const handleAddAsset = (newAsset) => {
     setAssets((prevAssets) => [...prevAssets, newAsset]);
@@ -193,6 +196,7 @@ export default function AssetsTable() {
         onClose={() => {
           setOpenAddModal(false);
           setEditAsset(null);
+          fetchAssets(); // Refresh the asset list after closing the dialog
         }}
         onAssetAdded={editAsset ? handleUpdateAsset : handleAddAsset}
         initialValues={editAsset}

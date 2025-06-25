@@ -36,8 +36,8 @@ const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: 20,
   boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
   transition: "all 0.3s ease-in-out",
-  width: "100%", // Ensure the card takes the full available width
-  display: "flex", // Use flex to stretch content
+  height: "100%",
+  display: "flex",
   flexDirection: "column",
   "&:hover": {
     transform: "translateY(-4px)",
@@ -50,12 +50,14 @@ const GradientCard = styled(Card)(({ theme }) => ({
   color: "white",
   borderRadius: 20,
   boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
-  width: "100%",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
 }));
 
 const AssetImage = styled(Box)(({ theme }) => ({
-  width: "100%", // Ensure the image box takes the full width
-  height: 400,
+  width: "100%",
+  height: 300,
   borderRadius: 16,
   background: "linear-gradient(45deg, #f0f2f5, #e1e5e9)",
   display: "flex",
@@ -70,7 +72,7 @@ const AssetImage = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("/placeholder.svg?height=400&width=600") center/cover', // Use a wider placeholder image
+    background: 'url("/placeholder.svg?height=300&width=400") center/cover',
     borderRadius: 16,
   },
 }));
@@ -81,6 +83,7 @@ const InfoField = styled(Paper)(({ theme }) => ({
   background: "linear-gradient(145deg, #ffffff, #f8f9fa)",
   border: "1px solid #e9ecef",
   transition: "all 0.2s ease",
+  height: "100%",
   "&:hover": {
     borderColor: "#667eea",
     transform: "translateY(-1px)",
@@ -92,7 +95,10 @@ const StatusCard = styled(Card)(({ theme }) => ({
   color: "white",
   borderRadius: 16,
   padding: theme.spacing(2),
-  width: "100%",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
 }));
 
 const SpecItem = styled(Box)(({ theme }) => ({
@@ -164,14 +170,27 @@ export default function ViewAssets() {
     >
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
         <Box maxWidth="1400px" mx="auto">
-          <Grid container spacing={4}>
-            {/* Left Column */}
-            <Grid item xs={12} lg={6} >
-              <Stack spacing={3} sx={{ width: "100%" }}>
-                {/* Asset Image (Photo Section) */}
+          {/* Main Flex Container */}
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", lg: "row" },
+              gap: 4,
+              width: "100%",
+            }}
+          >
+            {/* Left Column - Image and QR Code */}
+            <Box
+              sx={{
+                flex: { xs: "1 1 100%", lg: "0 0 400px" }, // Fixed width on large screens
+                minWidth: { lg: "400px" },
+              }}
+            >
+              <Stack spacing={3} sx={{ height: "100%" }}>
+                {/* Asset Image */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
-                    <CardContent sx={{ p: 3, flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                    <CardContent sx={{ p: 3, flexGrow: 1 }}>
                       <Typography
                         variant="h6"
                         gutterBottom
@@ -179,7 +198,7 @@ export default function ViewAssets() {
                       >
                         Asset Photo
                       </Typography>
-                      <AssetImage sx={{ flexGrow: 1 }} /> {/* Allow AssetImage to stretch */}
+                      <AssetImage />
                       <Typography
                         variant="body2"
                         sx={{ mt: 2, textAlign: "center", color: "#666" }}
@@ -193,17 +212,18 @@ export default function ViewAssets() {
                 {/* QR Code Section */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
-                    <CardContent sx={{ p: 3, flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                    <CardContent sx={{ p: 3, textAlign: "center" }}>
                       <Typography
                         variant="h6"
                         gutterBottom
                         sx={{
                           fontWeight: 600,
-                          minWidth: 300,
                           color: "#2c3e50",
                           display: "flex",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: 1,
+                          mb: 3,
                         }}
                       >
                         <Inventory color="primary" />
@@ -214,25 +234,30 @@ export default function ViewAssets() {
                           display: "flex",
                           justifyContent: "center",
                           p: 3,
-                          minWidth: 300,
                           background: "white",
                           borderRadius: 2,
-                          flexGrow: 1, // Allow the container to stretch
+                          mx: "auto",
+                          maxWidth: 250,
                         }}
                       >
                         <QRCode
                           value={qrData}
-                          style={{ height: "auto", width: "100%", maxWidth: "300px" }} // Make QRCode responsive
+                          style={{ height: "auto", width: "100%", maxWidth: "200px" }}
                         />
                       </Box>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
               </Stack>
-            </Grid>
+            </Box>
 
-            {/* Right Column */}
-            <Grid item xs={12} lg={6}>
+            {/* Right Column - Details */}
+            <Box
+              sx={{
+                flex: "1 1 auto", // Take remaining space
+                minWidth: 0, // Allow shrinking
+              }}
+            >
               <Stack spacing={3}>
                 {/* Asset Header */}
                 <motion.div variants={itemVariants}>
@@ -244,7 +269,7 @@ export default function ViewAssets() {
                       <Typography variant="h6" sx={{ opacity: 0.9, mb: 2 }}>
                         {assetData.category?.name || "N/A"}
                       </Typography>
-                      <Stack direction="row" spacing={1}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         <Chip
                           label={assetData.status}
                           color={
@@ -264,7 +289,7 @@ export default function ViewAssets() {
                           variant="outlined"
                           sx={{ color: "white", borderColor: "white" }}
                         />
-                      </Stack>
+                      </Box>
                     </CardContent>
                   </GradientCard>
                 </motion.div>
@@ -280,49 +305,67 @@ export default function ViewAssets() {
                       >
                         Asset Details
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", sm: "row" },
+                          gap: 2,
+                          mb: 2,
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
                           <InfoField elevation={0}>
                             <Typography variant="caption" color="textSecondary">
                               Asset ID
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                            <Typography 
+                              variant="body1" 
+                              sx={{ 
+                                fontWeight: 500, 
+                                wordBreak: "break-all",
+                                fontSize: "0.9rem" 
+                              }}
+                            >
                               {assetData._id}
                             </Typography>
                           </InfoField>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
                           <InfoField elevation={0}>
                             <Typography variant="caption" color="textSecondary">
                               Category
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               {assetData.category?.name || "N/A"}
                             </Typography>
                           </InfoField>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <InfoField elevation={0}>
-                            <Typography variant="caption" color="textSecondary">
-                              Description
-                            </Typography>
-                            <Typography
-                              variant="body1"
-                              sx={{ mt: 1, lineHeight: 1.6 }}
-                            >
-                              {assetData.description || "No description available"}
-                            </Typography>
-                          </InfoField>
-                        </Grid>
-                      </Grid>
+                        </Box>
+                      </Box>
+                      <InfoField elevation={0}>
+                        <Typography variant="caption" color="textSecondary">
+                          Description
+                        </Typography>
+                        <Typography
+                          variant="body1"
+                          sx={{ mt: 1, lineHeight: 1.6 }}
+                        >
+                          {assetData.description || "No description available"}
+                        </Typography>
+                      </InfoField>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
 
                 {/* Status and Maintenance */}
                 <motion.div variants={itemVariants}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={8}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ flex: 2 }}>
                       <StatusCard>
                         <Stack
                           direction="row"
@@ -351,10 +394,19 @@ export default function ViewAssets() {
                           />
                         </Stack>
                       </StatusCard>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <StyledCard sx={{ height: "100%" }}>
-                        <CardContent sx={{ textAlign: "center", p: 2 }}>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <StyledCard>
+                        <CardContent 
+                          sx={{ 
+                            textAlign: "center", 
+                            p: 2,
+                            display: "flex",
+                            flexDirection: "column",
+                            justifyContent: "center",
+                            flexGrow: 1
+                          }}
+                        >
                           <Typography variant="caption" color="textSecondary">
                             Last Maintenance
                           </Typography>
@@ -366,8 +418,8 @@ export default function ViewAssets() {
                           </Typography>
                         </CardContent>
                       </StyledCard>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </motion.div>
 
                 {/* Location Info */}
@@ -389,10 +441,16 @@ export default function ViewAssets() {
                         <LocationOn color="primary" />
                         Location Details
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", sm: "row" },
+                          gap: 3,
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
                           <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                            sx={{ display: "flex", alignItems: "center", gap: 2 }}
                           >
                             <Avatar sx={{ bgcolor: "#e3f2fd" }}>
                               <LocationOn color="primary" />
@@ -406,10 +464,10 @@ export default function ViewAssets() {
                               </Typography>
                             </Box>
                           </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
                           <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
+                            sx={{ display: "flex", alignItems: "center", gap: 2 }}
                           >
                             <Avatar sx={{ bgcolor: "#e8f5e8" }}>
                               <Schedule color="success" />
@@ -423,8 +481,8 @@ export default function ViewAssets() {
                               </Typography>
                             </Box>
                           </Box>
-                        </Grid>
-                      </Grid>
+                        </Box>
+                      </Box>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
@@ -476,7 +534,15 @@ export default function ViewAssets() {
                               Description
                             </Typography>
                           </Box>
-                          <Typography variant="body1">
+                          <Typography 
+                            variant="body1"
+                            sx={{ 
+                              wordBreak: "break-word",
+                              flex: 1,
+                              textAlign: "right",
+                              maxWidth: "60%"
+                            }}
+                          >
                             {assetData.description || "N/A"}
                           </Typography>
                         </SpecItem>
@@ -485,8 +551,8 @@ export default function ViewAssets() {
                   </StyledCard>
                 </motion.div>
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
       </motion.div>
     </Box>

@@ -33,7 +33,13 @@ export default function TeamsPage() {
   const [openAddModal, setOpenAddModal] = useState(false);
 
   useEffect(() => {
-    const fetchTeams = async () => {
+
+
+    fetchTeams();
+  }, []);
+
+
+      const fetchTeams = async () => {
       try {
         const response = await api.get('/teams');
         if (response.data.success) {
@@ -43,9 +49,6 @@ export default function TeamsPage() {
         console.error('Error fetching teams:', error);
       }
     };
-
-    fetchTeams();
-  }, []);
 
   const handleAddTeam = (newTeam) => {
     setTeams((prevTeams) => [...prevTeams, newTeam]);
@@ -168,7 +171,10 @@ export default function TeamsPage() {
 
       <AddTeamForm
         open={openAddModal}
-        onClose={() => setOpenAddModal(false)}
+        onClose={() => {
+          setOpenAddModal(false);
+          fetchTeams(); // Refresh teams after adding a new one
+        }}
         onSave={handleAddTeam}
       />
     </Box>

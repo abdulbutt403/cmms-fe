@@ -1,4 +1,4 @@
-"use client"
+"use client";
 import { useState, useEffect } from "react";
 import {
   Box,
@@ -6,7 +6,6 @@ import {
   CardContent,
   Typography,
   Chip,
-  Grid,
   Avatar,
   Paper,
   Stack,
@@ -34,7 +33,7 @@ const StyledCard = styled(Card)(({ theme }) => ({
   borderRadius: 20,
   boxShadow: "0 8px 32px rgba(0, 0, 0, 0.1)",
   transition: "all 0.3s ease-in-out",
-  width: "100%",
+  height: "100%",
   display: "flex",
   flexDirection: "column",
   "&:hover": {
@@ -48,12 +47,14 @@ const GradientCard = styled(Card)(({ theme }) => ({
   color: "white",
   borderRadius: 20,
   boxShadow: "0 8px 32px rgba(102, 126, 234, 0.3)",
-  width: "100%",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
 }));
 
 const PartImage = styled(Box)(({ theme }) => ({
   width: "100%",
-  height: 400,
+  height: 300,
   borderRadius: 16,
   background: "linear-gradient(45deg, #f0f2f5, #e1e5e9)",
   display: "flex",
@@ -68,7 +69,7 @@ const PartImage = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("/placeholder.svg?height=400&width=600") center/cover',
+    background: 'url("/placeholder.svg?height=300&width=400") center/cover',
     borderRadius: 16,
   },
 }));
@@ -79,6 +80,7 @@ const InfoField = styled(Paper)(({ theme }) => ({
   background: "linear-gradient(145deg, #ffffff, #f8f9fa)",
   border: "1px solid #e9ecef",
   transition: "all 0.2s ease",
+  height: "100%",
   "&:hover": {
     borderColor: "#667eea",
     transform: "translateY(-1px)",
@@ -90,7 +92,10 @@ const StatusCard = styled(Card)(({ theme }) => ({
   color: "white",
   borderRadius: 16,
   padding: theme.spacing(2),
-  width: "100%",
+  height: "100%",
+  display: "flex",
+  flexDirection: "column",
+  justifyContent: "center",
 }));
 
 const SpecItem = styled(Box)(({ theme }) => ({
@@ -108,9 +113,7 @@ const containerVariants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
-    transition: {
-      staggerChildren: 0.1,
-    },
+    transition: { staggerChildren: 0.1 },
   },
 };
 
@@ -137,14 +140,10 @@ export default function ViewParts() {
         toast.error("Error fetching part");
       }
     };
-    if (id) {
-      fetchPart();
-    }
+    if (id) fetchPart();
   }, [id]);
 
-  if (!partData) {
-    return <Typography>Loading...</Typography>;
-  }
+  if (!partData) return <Typography>Loading...</Typography>;
 
   const qrData = JSON.stringify({
     name: partData.partName,
@@ -162,22 +161,30 @@ export default function ViewParts() {
     >
       <motion.div variants={containerVariants} initial="hidden" animate="visible">
         <Box maxWidth="1400px" mx="auto">
-          <Grid container spacing={4}>
+          <Box
+            sx={{
+              display: "flex",
+              flexDirection: { xs: "column", lg: "row" },
+              gap: 4,
+              width: "100%",
+            }}
+          >
             {/* Left Column */}
-            <Grid item xs={12} lg={6}>
-              <Stack spacing={3} sx={{ width: "100%" }}>
-                {/* Part Image (Photo Section) */}
+            <Box
+              sx={{
+                flex: { xs: "1 1 100%", lg: "0 0 400px" },
+                minWidth: { lg: "400px" },
+              }}
+            >
+              <Stack spacing={3} sx={{ height: "100%" }}>
+                {/* Part Image */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
-                    <CardContent sx={{ p: 3, flexGrow: 1, display: "flex", flexDirection: "column" }}>
-                      <Typography
-                        variant="h6"
-                        gutterBottom
-                        sx={{ fontWeight: 600, color: "#2c3e50", mb: 2 }}
-                      >
+                    <CardContent sx={{ p: 3, flexGrow: 1 }}>
+                      <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Part Photo
                       </Typography>
-                      <PartImage sx={{ flexGrow: 1 }} />
+                      <PartImage />
                       <Typography
                         variant="body2"
                         sx={{ mt: 2, textAlign: "center", color: "#666" }}
@@ -188,19 +195,20 @@ export default function ViewParts() {
                   </StyledCard>
                 </motion.div>
 
-                {/* QR Code Section */}
+                {/* QR Code */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
-                    <CardContent sx={{ p: 3, flexGrow: 1, display: "flex", flexDirection: "column" }}>
+                    <CardContent sx={{ p: 3, textAlign: "center" }}>
                       <Typography
                         variant="h6"
-                        gutterBottom
                         sx={{
                           fontWeight: 600,
                           color: "#2c3e50",
                           display: "flex",
                           alignItems: "center",
+                          justifyContent: "center",
                           gap: 1,
+                          mb: 3,
                         }}
                       >
                         <Inventory color="primary" />
@@ -213,23 +221,22 @@ export default function ViewParts() {
                           p: 3,
                           background: "white",
                           borderRadius: 2,
-                          border: "2px dashed #e0e0e0",
-                          flexGrow: 1,
+                          mx: "auto",
+                          maxWidth: 250,
                         }}
                       >
                         <QRCode
                           value={qrData}
-                          style={{ height: "auto", width: "100%", maxWidth: "300px" }}
+                          style={{ height: "auto", width: "100%", maxWidth: "200px" }}
                         />
                       </Box>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
               </Stack>
-            </Grid>
-
+            </Box>
             {/* Right Column */}
-            <Grid item xs={12} lg={6}>
+            <Box sx={{ flex: "1 1 auto", minWidth: 0 }}>
               <Stack spacing={3}>
                 {/* Part Header */}
                 <motion.div variants={itemVariants}>
@@ -241,7 +248,7 @@ export default function ViewParts() {
                       <Typography variant="h6" sx={{ opacity: 0.9, mb: 2 }}>
                         {partData.category?.name || "N/A"}
                       </Typography>
-                      <Stack direction="row" spacing={1}>
+                      <Box sx={{ display: "flex", flexWrap: "wrap", gap: 1 }}>
                         <Chip
                           label={partData.status}
                           color={
@@ -261,65 +268,75 @@ export default function ViewParts() {
                           variant="outlined"
                           sx={{ color: "white", borderColor: "white" }}
                         />
-                      </Stack>
+                      </Box>
                     </CardContent>
                   </GradientCard>
                 </motion.div>
 
-                {/* Basic Information */}
+                {/* Part Details */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
                     <CardContent sx={{ p: 3 }}>
                       <Typography
                         variant="h6"
-                        gutterBottom
                         sx={{ fontWeight: 600, color: "#2c3e50", mb: 3 }}
                       >
                         Part Details
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", sm: "row" },
+                          gap: 2,
+                          mb: 2,
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
                           <InfoField elevation={0}>
                             <Typography variant="caption" color="textSecondary">
                               Part ID
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                            <Typography
+                              variant="body1"
+                              sx={{ fontWeight: 500, wordBreak: "break-word", fontSize: "0.9rem" }}
+                            >
                               {partData._id}
                             </Typography>
                           </InfoField>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
                           <InfoField elevation={0}>
                             <Typography variant="caption" color="textSecondary">
                               Category
                             </Typography>
-                            <Typography variant="h6" sx={{ fontWeight: 500 }}>
+                            <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               {partData.category?.name || "N/A"}
                             </Typography>
                           </InfoField>
-                        </Grid>
-                        <Grid item xs={12}>
-                          <InfoField elevation={0}>
-                            <Typography variant="caption" color="textSecondary">
-                              Description
-                            </Typography>
-                            <Typography
-                              variant="body1"
-                              sx={{ mt: 1, lineHeight: 1.6 }}
-                            >
-                              {partData.description || "No description available"}
-                            </Typography>
-                          </InfoField>
-                        </Grid>
-                      </Grid>
+                        </Box>
+                      </Box>
+                      <InfoField elevation={0}>
+                        <Typography variant="caption" color="textSecondary">
+                          Description
+                        </Typography>
+                        <Typography variant="body1" sx={{ mt: 1, lineHeight: 1.6 }}>
+                          {partData.description || "No description available"}
+                        </Typography>
+                      </InfoField>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
 
                 {/* Status and Stock */}
                 <motion.div variants={itemVariants}>
-                  <Grid container spacing={2}>
-                    <Grid item xs={12} sm={8}>
+                  <Box
+                    sx={{
+                      display: "flex",
+                      flexDirection: { xs: "column", sm: "row" },
+                      gap: 2,
+                    }}
+                  >
+                    <Box sx={{ flex: 2 }}>
                       <StatusCard>
                         <Stack
                           direction="row"
@@ -336,8 +353,8 @@ export default function ViewParts() {
                           </Box>
                           <Chip
                             label={
-                              partData.status === "In Stock"
-                                ? "Available"
+                              partData.availableQuantity > 0
+                                ? "In Stock"
                                 : "Needs Restock"
                             }
                             sx={{
@@ -348,23 +365,23 @@ export default function ViewParts() {
                           />
                         </Stack>
                       </StatusCard>
-                    </Grid>
-                    <Grid item xs={12} sm={4}>
-                      <StyledCard sx={{ height: "100%" }}>
+                    </Box>
+                    <Box sx={{ flex: 1 }}>
+                      <StyledCard>
                         <CardContent sx={{ textAlign: "center", p: 2 }}>
                           <Typography variant="caption" color="textSecondary">
-                            Last Restock
+                            Total Quantity
                           </Typography>
                           <Typography
                             variant="h5"
                             sx={{ fontWeight: 600, color: "#11998e" }}
                           >
-                            N/A
+                            {partData.availableQuantity || 0}
                           </Typography>
                         </CardContent>
                       </StyledCard>
-                    </Grid>
-                  </Grid>
+                    </Box>
+                  </Box>
                 </motion.div>
 
                 {/* Location Info */}
@@ -373,7 +390,6 @@ export default function ViewParts() {
                     <CardContent sx={{ p: 3 }}>
                       <Typography
                         variant="h6"
-                        gutterBottom
                         sx={{
                           fontWeight: 600,
                           color: "#2c3e50",
@@ -386,11 +402,15 @@ export default function ViewParts() {
                         <LocationOn color="primary" />
                         Location Details
                       </Typography>
-                      <Grid container spacing={2}>
-                        <Grid item xs={12} sm={6}>
-                          <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-                          >
+                      <Box
+                        sx={{
+                          display: "flex",
+                          flexDirection: { xs: "column", sm: "row" },
+                          gap: 3,
+                        }}
+                      >
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                             <Avatar sx={{ bgcolor: "#e3f2fd" }}>
                               <LocationOn color="primary" />
                             </Avatar>
@@ -403,11 +423,9 @@ export default function ViewParts() {
                               </Typography>
                             </Box>
                           </Box>
-                        </Grid>
-                        <Grid item xs={12} sm={6}>
-                          <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 2, mb: 2 }}
-                          >
+                        </Box>
+                        <Box sx={{ flex: 1 }}>
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 2 }}>
                             <Avatar sx={{ bgcolor: "#e8f5e8" }}>
                               <Schedule color="success" />
                             </Avatar>
@@ -420,8 +438,8 @@ export default function ViewParts() {
                               </Typography>
                             </Box>
                           </Box>
-                        </Grid>
-                      </Grid>
+                        </Box>
+                      </Box>
                     </CardContent>
                   </StyledCard>
                 </motion.div>
@@ -432,16 +450,13 @@ export default function ViewParts() {
                     <CardContent sx={{ p: 3 }}>
                       <Typography
                         variant="h6"
-                        gutterBottom
                         sx={{ fontWeight: 600, color: "#2c3e50", mb: 3 }}
                       >
                         Part Specifications
                       </Typography>
                       <Box>
                         <SpecItem>
-                          <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                          >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <Build color="primary" />
                             <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               Category
@@ -452,9 +467,7 @@ export default function ViewParts() {
                           </Typography>
                         </SpecItem>
                         <SpecItem>
-                          <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                          >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <LocationOn color="success" />
                             <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               Building
@@ -465,15 +478,16 @@ export default function ViewParts() {
                           </Typography>
                         </SpecItem>
                         <SpecItem>
-                          <Box
-                            sx={{ display: "flex", alignItems: "center", gap: 1 }}
-                          >
+                          <Box sx={{ display: "flex", alignItems: "center", gap: 1 }}>
                             <Description color="info" />
                             <Typography variant="body1" sx={{ fontWeight: 500 }}>
                               Description
                             </Typography>
                           </Box>
-                          <Typography variant="body1">
+                          <Typography
+                            variant="body1"
+                            sx={{ wordBreak: "break-word", textAlign: "right", maxWidth: "60%" }}
+                          >
                             {partData.description || "N/A"}
                           </Typography>
                         </SpecItem>
@@ -482,8 +496,8 @@ export default function ViewParts() {
                   </StyledCard>
                 </motion.div>
               </Stack>
-            </Grid>
-          </Grid>
+            </Box>
+          </Box>
         </Box>
       </motion.div>
     </Box>

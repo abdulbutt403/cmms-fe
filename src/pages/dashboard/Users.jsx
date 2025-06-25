@@ -40,7 +40,13 @@ export default function UsersPage() {
   const [openAddModal, setOpenAddModal] = useState(false);
 
   useEffect(() => {
-    const fetchUsers = async () => {
+
+
+    fetchUsers();
+  }, []);
+
+
+      const fetchUsers = async () => {
       try {
         const response = await api.get('/users');
         if (response.data.success) {
@@ -50,9 +56,6 @@ export default function UsersPage() {
         console.error('Error fetching users:', error);
       }
     };
-
-    fetchUsers();
-  }, []);
 
   const handleAddUser = (newUser) => {
     setUsers((prevUsers) => [...prevUsers, newUser]);
@@ -164,7 +167,10 @@ export default function UsersPage() {
 
       <AddUserForm
         open={openAddModal}
-        onClose={() => setOpenAddModal(false)}
+        onClose={() => {
+          setOpenAddModal(false);
+          fetchUsers(); // Refresh the user list after closing the modal
+        }}
         onSave={handleAddUser}
       />
     </Box>

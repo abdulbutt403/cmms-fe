@@ -206,6 +206,9 @@ export default function WorkOrderRegister({closeModal}) {
         formData.append(`tasks[${index}][taskName]`, task.taskName);
         formData.append(`tasks[${index}][taskType]`, task.taskType);
       });
+
+
+      console.log("Parts before appending:", parts);
       
       parts.forEach((part, index) => {
         formData.append(`parts[${index}][partId]`, part.partId);

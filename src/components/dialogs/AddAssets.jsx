@@ -46,7 +46,7 @@ export default function AddAssetDialog({ open, onClose }) {
             Cancel
           </Typography>
         </Stack>
-        <AssetsForm />
+        <AssetsForm onClose={onClose} />
       </DialogContent>
     </Dialog>
   );

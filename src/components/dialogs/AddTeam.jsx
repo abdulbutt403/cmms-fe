@@ -6,7 +6,7 @@ import UserTeamForm from '../../sections/dashboard/Forms/UserTeamForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddUserDialog({open, onClose, }) {
+export default function AddUserDialog({open, onClose}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -22,7 +22,7 @@ export default function AddUserDialog({open, onClose, }) {
               Cancel
             </Typography>
           </Stack>
-          <UserTeamForm formType={'Team'}/>
+          <UserTeamForm formType={'Team'} closeModal={onClose}/>
       </DialogContent>
   </Dialog>
 

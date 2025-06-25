@@ -34,7 +34,7 @@ import api from '../../../api/api';
 
 // ============================|| ASSET - ADD ||============================ //
 
-export default function AssetsForm() {
+export default function AssetsForm({onClose}) {
   const navigate = useNavigate();
   const [buildings, setBuildings] = useState([]);
   const [qrCodeValue, setQrCodeValue] = useState('');
@@ -42,6 +42,8 @@ export default function AssetsForm() {
   const [openCategoryModal, setOpenCategoryModal] = useState(false); // State for modal
   const [newCategoryName, setNewCategoryName] = useState(''); //
   const [vendors, setVendors] = useState([]);
+    const [users, setUsers] = useState([]);
+    const [teams, setTeams] = useState([]);
 
   useEffect(() => {
     const fetchBuildings = async () => {
@@ -55,6 +57,28 @@ export default function AssetsForm() {
         toast.error('Failed to load buildings');
       }
     };
+
+      const fetchUsers = async () => {
+          try {
+            const res = await api.get('/users');
+            if (res.data.success) {
+              setUsers(res.data.data);
+            }
+          } catch (err) {
+            console.error('Failed to load users', err);
+          }
+        };
+    
+        const fetchTeams = async () => {
+          try {
+            const res = await api.get('/teams');
+            if (res.data.success) {
+              setTeams(res.data.data);
+            }
+          } catch (err) {
+            console.error('Failed to load teams', err);
+          }
+        };
 
     const fetchCategories = async () => {
       try {
@@ -85,6 +109,8 @@ export default function AssetsForm() {
     fetchCategories();
     fetchVendors(); // Fetch vendors when the component mounts
     generateRandomQR(); // Generate a random QR code when the component mounts
+    fetchUsers(); // Fetch users when the component mounts
+    fetchTeams();
   }, []);
 
   const generateRandomQR = () => {
@@ -98,31 +124,42 @@ export default function AssetsForm() {
         event.preventDefault();
       }
 
-      const response = await api.post('/assets', {
-        assetName: values.assetName,
-        building: values.building,
-        category: values.category,
-        description: values.description,
-        status: values.status,
-        serialNumber: values.serialNumber,
-        modelNumber: values.modelNumber,
-        manufacturer: values.manufacturer,
-        purchaseDate: values.purchaseDate,
-        purchaseCost: values.purchaseCost,
-        warrantyExpiryDate: values.warrantyExpiryDate,
-        assignee: values.assignee,
-        assignedTo: values.assignedTo
+      const formData = new FormData();
+      formData.append('assetName', values.assetName);
+      formData.append('building', values.building);
+      formData.append('category', values.category);
+      formData.append('description', values.description);
+      formData.append('status', values.status);
+      formData.append('serialNumber', values.serialNumber);
+      formData.append('modelNumber', values.modelNumber);
+      formData.append('manufacturer', values.manufacturer);
+      formData.append('purchaseDate', values.purchaseDate);
+      formData.append('purchaseCost', values.purchaseCost);
+      formData.append('warrantyExpiryDate', values.warrantyExpiryDate);
+      formData.append('assignee', values.assignee);
+      formData.append('assignedTo', values.assignedTo);
+
+      if (values.assetPhoto) {
+        formData.append('assetPhoto', values.assetPhoto); // ✅ add file
+      }
+
+      const response = await api.post('/assets', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.data.success) {
         setQrCodeValue(response.data.data.qrCode); // Ensure this line is present
-        toast.success('Asset added successfully!');// Navigate after showing QR code
+        toast.success('Asset added successfully!'); // Navigate after showing QR code
       } else {
         toast.error('Failed to add asset. Please try again.');
       }
 
       setStatus({ success: true });
       setSubmitting(false);
+      onClose();
+
     } catch (err) {
       console.error('Error:', err.response ? err.response.data : err.message);
       setStatus({ success: false });
@@ -139,6 +176,7 @@ export default function AssetsForm() {
           building: '',
           category: '',
           description: '',
+          assetPhoto: null,
           status: 'Active',
           serialNumber: '',
           modelNumber: '',
@@ -441,12 +479,46 @@ export default function AssetsForm() {
                     error={Boolean(touched.assignedTo && errors.assignedTo)}
                     helperText={touched.assignedTo && errors.assignedTo}
                   >
-                    <MenuItem value="">- Select -</MenuItem>
-                    <MenuItem value="placeholder-user-or-team">Placeholder User/Team</MenuItem>
-                    {/* Add more options later */}
+                     <MenuItem value="">- Select -</MenuItem>
+                    {values.assignee === 'User'
+                      ? users.map((user) => (
+                          <MenuItem key={user._id} value={user._id}>
+                            {user.name || user.email || user._id}
+                          </MenuItem>
+                        ))
+                      : teams.map((team) => (
+                          <MenuItem key={team._id} value={team._id}>
+                            {team.name || team._id}
+                          </MenuItem>
+                        ))}
                   </TextField>
                 </Stack>
               </Grid>
+              <Grid size={{ xs: 12 }}>
+                <Stack sx={{ gap: 1 }}>
+                  <InputLabel htmlFor="asset-photo-upload">Asset Photo</InputLabel>
+                  <input
+                    id="asset-photo-upload"
+                    name="assetPhoto"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.currentTarget.files[0];
+                      if (file) {
+                        // update Formik state manually
+                        handleChange({
+                          target: {
+                            name: 'assetPhoto',
+                            value: file
+                          }
+                        });
+                      }
+                    }}
+                  />
+                  <FormHelperText>Optional image for this asset</FormHelperText>
+                </Stack>
+              </Grid>
+
               {qrCodeValue && (
                 <Grid size={{ xs: 12 }}>
                   <Stack sx={{ gap: 1, alignItems: 'center' }}>
