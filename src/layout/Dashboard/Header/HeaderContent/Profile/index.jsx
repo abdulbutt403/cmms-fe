@@ -92,7 +92,7 @@ export default function Profile() {
         <Stack direction="row" sx={{ gap: 1.25, alignItems: 'center', p: 0.5 }}>
           <Avatar alt="profile user" src={avatar1} size="sm" />
           <Typography variant="subtitle1" sx={{ textTransform: 'capitalize' }}>
-            {companyName ? companyName : "John Doe"}
+            {companyName ? companyName : 'John Doe'}
           </Typography>
         </Stack>
       </ButtonBase>
@@ -133,7 +133,14 @@ export default function Profile() {
                         </Stack>
                       </Grid>
                       <Grid>
-                        <Tooltip title="Logout">
+                        <Tooltip
+                          title="Logout"
+                          onClick={() => {
+                            localStorage.removeItem('token');
+                            localStorage.removeItem('user');
+                            window.location.href = '/login';
+                          }}
+                        >
                           <IconButton size="large" sx={{ color: 'text.primary' }}>
                             <LogoutOutlined />
                           </IconButton>

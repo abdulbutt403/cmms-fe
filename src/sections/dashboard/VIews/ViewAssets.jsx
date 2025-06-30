@@ -55,7 +55,7 @@ const GradientCard = styled(Card)(({ theme }) => ({
   flexDirection: "column",
 }));
 
-const AssetImage = styled(Box)(({ theme }) => ({
+const AssetImage = styled(Box)(({ theme, backgroundUrl }) => ({
   width: "100%",
   height: 300,
   borderRadius: 16,
@@ -72,7 +72,7 @@ const AssetImage = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("/placeholder.svg?height=300&width=400") center/cover',
+    background: backgroundUrl ? `url(${backgroundUrl}) center/cover` : 'url("/placeholder.svg?height=300&width=400") center/cover',
     borderRadius: 16,
   },
 }));
@@ -130,6 +130,7 @@ const itemVariants = {
 export default function ViewAssets() {
   const { id } = useParams();
   const [assetData, setAssetData] = useState(null);
+  const backendUrl = import.meta.env.VITE_APP_BACKEND
 
   useEffect(() => {
     const fetchAsset = async () => {
@@ -187,7 +188,6 @@ export default function ViewAssets() {
               }}
             >
               <Stack spacing={3} sx={{ height: "100%" }}>
-                {/* Asset Image */}
                 <motion.div variants={itemVariants}>
                   <StyledCard>
                     <CardContent sx={{ p: 3, flexGrow: 1 }}>
@@ -198,12 +198,12 @@ export default function ViewAssets() {
                       >
                         Asset Photo
                       </Typography>
-                      <AssetImage />
+                      <AssetImage backgroundUrl={assetData.assetPhoto ? backendUrl + assetData.assetPhoto : "/placeholder.svg?height=300&width=400"} />
                       <Typography
                         variant="body2"
                         sx={{ mt: 2, textAlign: "center", color: "#666" }}
                       >
-                        {assetData.photo ? "Photo uploaded" : "No photo uploaded"}
+                        {assetData.assetPhoto ? backendUrl + assetData.assetPhoto : "No photo uploaded"}
                       </Typography>
                     </CardContent>
                   </StyledCard>
