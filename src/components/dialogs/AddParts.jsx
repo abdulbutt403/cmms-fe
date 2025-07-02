@@ -22,7 +22,7 @@ export default function AddPartsDialog({open, onClose, }) {
               Cancel
             </Typography>
           </Stack>
-          <PartsForm/>
+          <PartsForm onClose={onClose} />
       </DialogContent>
   </Dialog>
 

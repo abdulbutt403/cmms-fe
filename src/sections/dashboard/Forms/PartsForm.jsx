@@ -33,7 +33,7 @@ import api from '../../../api/api';
 
 // ============================|| PART - ADD ||============================ //
 
-export default function AddPartForm() {
+export default function AddPartForm({onClose}) {
   const navigate = useNavigate();
   const [buildings, setBuildings] = useState([]);
   const [customers, setCustomers] = useState([]);
@@ -109,24 +109,33 @@ export default function AddPartForm() {
         event.preventDefault();
       }
 
-      const response = await api.post('/parts', {
-        partName: values.partName,
-        partNumber: values.partNumber,
-        category: values.category,
-        barCode: values.barCode,
-        availableQuantity: values.availableQuantity,
-        building: values.building,
-        customer: values.customer,
-        description: values.description,
-        manufacturer: values.manufacturer,
-        purchaseDate: values.purchaseDate,
-        purchaseCost: values.purchaseCost,
-        qrCode: qrCodeValue
+      const formData = new FormData();
+      formData.append('partName', values.partName);
+      formData.append('partNumber', values.partNumber);
+      formData.append('category', values.category);
+      formData.append('barCode', values.barCode);
+      formData.append('availableQuantity', values.availableQuantity);
+      formData.append('building', values.building);
+      formData.append('customer', values.customer);
+      formData.append('description', values.description);
+      formData.append('manufacturer', values.manufacturer);
+      formData.append('purchaseDate', values.purchaseDate);
+      formData.append('purchaseCost', values.purchaseCost);
+      formData.append('qrCode', qrCodeValue);
+      if (values.partPhoto) {
+        formData.append('partPhoto', values.partPhoto);
+      }
+
+      const response = await api.post('/parts', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data'
+        }
       });
 
       if (response.data.success) {
         setQrCodeValue(response.data.data.qrCode || qrCodeValue);
         toast.success('Part added successfully!');
+        onClose();
       } else {
         toast.error('Failed to add part. Please try again.');
       }
@@ -156,6 +165,7 @@ export default function AddPartForm() {
           manufacturer: '',
           purchaseDate: '',
           purchaseCost: 0,
+          partPhoto: null,
           submit: null
         }}
         validationSchema={Yup.object().shape({
@@ -170,10 +180,11 @@ export default function AddPartForm() {
           manufacturer: Yup.string().max(255),
           purchaseDate: Yup.date().nullable(),
           purchaseCost: Yup.number().min(0, 'Purchase Cost must be a positive number'),
+          partPhoto: Yup.mixed(),
         })}
         onSubmit={processFormSubmission}
       >
-        {({ errors, handleBlur, handleChange, handleSubmit, touched, values, isSubmitting }) => (
+        {({ errors, handleBlur, handleChange, handleSubmit, touched, values, isSubmitting, setFieldValue }) => (
           <form noValidate onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid size={{ xs: 12 }}>
@@ -420,7 +431,24 @@ export default function AddPartForm() {
                   </FormHelperText>
                 )}
               </Grid>
-             
+              <Grid size={{ xs: 12 }}>
+                <Stack sx={{ gap: 1 }}>
+                  <InputLabel htmlFor="part-photo-upload">Part Photo</InputLabel>
+                  <input
+                    id="part-photo-upload"
+                    name="partPhoto"
+                    type="file"
+                    accept="image/*"
+                    onChange={(event) => {
+                      const file = event.currentTarget.files[0];
+                      if (file) {
+                        setFieldValue('partPhoto', file);
+                      }
+                    }}
+                  />
+                  <FormHelperText>Optional image for this part</FormHelperText>
+                </Stack>
+              </Grid>
               {qrCodeValue && (
                 <Grid size={{ xs: 12 }}>
                   <Stack sx={{ gap: 1, alignItems: 'center' }}>

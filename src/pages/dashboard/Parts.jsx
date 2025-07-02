@@ -37,18 +37,19 @@ export default function PartsTable() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchParts = async () => {
-      try {
-        const res = await api.get("/parts");
-        if (res.data.success) {
-          setParts(res.data.data);
-        }
-      } catch (err) {
-        console.error("Failed to fetch parts", err);
-      }
-    };
     fetchParts();
   }, []);
+
+  const fetchParts = async () => {
+    try {
+      const res = await api.get("/parts");
+      if (res.data.success) {
+        setParts(res.data.data);
+      }
+    } catch (err) {
+      console.error("Failed to fetch parts", err);
+    }
+  };
 
   const handleAddPart = (newPart) => {
     setParts((prevParts) => [...prevParts, newPart]);
@@ -205,6 +206,7 @@ export default function PartsTable() {
         onClose={() => {
           setOpenAddModal(false);
           setEditPart(null);
+          fetchParts();
         }}
         onPartAdded={editPart ? handleUpdatePart : handleAddPart}
         initialValues={editPart}

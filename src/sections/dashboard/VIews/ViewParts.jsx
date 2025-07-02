@@ -52,7 +52,7 @@ const GradientCard = styled(Card)(({ theme }) => ({
   flexDirection: "column",
 }));
 
-const PartImage = styled(Box)(({ theme }) => ({
+const PartImage = styled(Box)(({ theme, backgroundUrl }) => ({
   width: "100%",
   height: 300,
   borderRadius: 16,
@@ -69,7 +69,7 @@ const PartImage = styled(Box)(({ theme }) => ({
     left: 0,
     right: 0,
     bottom: 0,
-    background: 'url("/placeholder.svg?height=300&width=400") center/cover',
+    background: backgroundUrl ? `url(${backgroundUrl}) center/cover` : 'url("/placeholder.svg?height=300&width=400") center/cover',
     borderRadius: 16,
   },
 }));
@@ -125,6 +125,7 @@ const itemVariants = {
 export default function ViewParts() {
   const { id } = useParams();
   const [partData, setPartData] = useState(null);
+  const backendUrl = import.meta.env.VITE_APP_BACKEND;
 
   useEffect(() => {
     const fetchPart = async () => {
@@ -184,12 +185,12 @@ export default function ViewParts() {
                       <Typography variant="h6" sx={{ fontWeight: 600, mb: 2 }}>
                         Part Photo
                       </Typography>
-                      <PartImage />
+                      <PartImage backgroundUrl={partData.partPhoto ? backendUrl + partData.partPhoto : "/placeholder.svg?height=300&width=400"} />
                       <Typography
                         variant="body2"
                         sx={{ mt: 2, textAlign: "center", color: "#666" }}
                       >
-                        {partData.photo ? "Photo uploaded" : "No photo uploaded"}
+                        {partData.partPhoto ? backendUrl + partData.partPhoto : "No photo uploaded"}
                       </Typography>
                     </CardContent>
                   </StyledCard>
