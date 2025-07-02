@@ -33,11 +33,11 @@ import api from '../../../api/api';
 
 // ============================|| PART - ADD ||============================ //
 
-export default function AddPartForm({onClose}) {
+export default function AddPartForm({onClose, initialValues, isEdit, onPartAdded}) {
   const navigate = useNavigate();
   const [buildings, setBuildings] = useState([]);
   const [customers, setCustomers] = useState([]);
-  const [qrCodeValue, setQrCodeValue] = useState('');
+  const [qrCodeValue, setQrCodeValue] = useState(initialValues && initialValues.qrCode ? initialValues.qrCode : '');
   const [categories, setCategories] = useState([]);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
@@ -96,7 +96,8 @@ export default function AddPartForm({onClose}) {
     fetchCustomers();
     fetchCategories();
     fetchVendors();
-    generateRandomQR();
+    if (!isEdit) generateRandomQR();
+    else if (initialValues && initialValues.qrCode) setQrCodeValue(initialValues.qrCode);
   }, []);
 
   const generateRandomQR = () => {
@@ -108,7 +109,6 @@ export default function AddPartForm({onClose}) {
       if (event) {
         event.preventDefault();
       }
-
       const formData = new FormData();
       formData.append('partName', values.partName);
       formData.append('partNumber', values.partNumber);
@@ -125,21 +125,24 @@ export default function AddPartForm({onClose}) {
       if (values.partPhoto) {
         formData.append('partPhoto', values.partPhoto);
       }
-
-      const response = await api.post('/parts', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
+      let response;
+      if (isEdit && initialValues && initialValues._id) {
+        response = await api.put(`/parts/${initialValues._id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      } else {
+        response = await api.post('/parts', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
+      }
       if (response.data.success) {
         setQrCodeValue(response.data.data.qrCode || qrCodeValue);
-        toast.success('Part added successfully!');
+        toast.success(isEdit ? 'Part updated successfully!' : 'Part added successfully!');
+        if (onPartAdded) onPartAdded(response.data.data);
         onClose();
       } else {
-        toast.error('Failed to add part. Please try again.');
+        toast.error(isEdit ? 'Failed to update part. Please try again.' : 'Failed to add part. Please try again.');
       }
-
       setStatus({ success: true });
       setSubmitting(false);
     } catch (err) {
@@ -150,24 +153,39 @@ export default function AddPartForm({onClose}) {
     }
   };
 
+  // Default blank values
+  const defaultInitialValues = {
+    partName: '',
+    partNumber: '',
+    category: '',
+    barCode: '',
+    availableQuantity: 0,
+    building: '',
+    customer: '',
+    description: '',
+    manufacturer: '',
+    purchaseDate: '',
+    purchaseCost: 0,
+    partPhoto: null,
+    submit: null
+  };
+
+  // Merge initialValues (for edit) with defaults
+  const formInitialValues = initialValues ? {
+    ...defaultInitialValues,
+    ...initialValues,
+    category: initialValues.category?._id || initialValues.category || '',
+    building: initialValues.building?._id || initialValues.building || '',
+    customer: initialValues.customer?._id || initialValues.customer || '',
+    manufacturer: initialValues.manufacturer?._id || initialValues.manufacturer || '',
+    purchaseDate: initialValues.purchaseDate ? initialValues.purchaseDate.slice(0, 10) : '',
+    partPhoto: null // never pre-fill photo
+  } : defaultInitialValues;
+
   return (
     <>
       <Formik
-        initialValues={{
-          partName: '',
-          partNumber: '',
-          category: '',
-          barCode: '',
-          availableQuantity: 0,
-          building: '',
-          customer: '',
-          description: '',
-          manufacturer: '',
-          purchaseDate: '',
-          purchaseCost: 0,
-          partPhoto: null,
-          submit: null
-        }}
+        initialValues={formInitialValues}
         validationSchema={Yup.object().shape({
           partName: Yup.string().max(255).required('Part Name is required'),
           partNumber: Yup.string().max(255),
@@ -471,7 +489,7 @@ export default function AddPartForm({onClose}) {
               <Grid size={12}>
                 <AnimateButton>
                   <Button fullWidth type="submit" size="large" variant="contained" color="primary" disabled={isSubmitting}>
-                    Add Part
+                    {isEdit ? 'Update Part' : 'Add Part'}
                   </Button>
                 </AnimateButton>
               </Grid>

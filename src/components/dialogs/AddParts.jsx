@@ -6,7 +6,7 @@ import PartsForm from '../../sections/dashboard/Forms/PartsForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddPartsDialog({open, onClose, }) {
+export default function AddPartsDialog({open, onClose, initialValues, isEdit, onPartAdded}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -17,12 +17,12 @@ export default function AddPartsDialog({open, onClose, }) {
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Add Parts</Typography>
+            <Typography variant="h4">{isEdit ? 'Edit Part' : 'Add Parts'}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={onClose} variant="body1" color="primary">
               Cancel
             </Typography>
           </Stack>
-          <PartsForm onClose={onClose} />
+          <PartsForm onClose={onClose} initialValues={initialValues} isEdit={isEdit} onPartAdded={onPartAdded} />
       </DialogContent>
   </Dialog>
 

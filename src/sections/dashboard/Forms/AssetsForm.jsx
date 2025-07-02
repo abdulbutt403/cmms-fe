@@ -34,16 +34,16 @@ import api from '../../../api/api';
 
 // ============================|| ASSET - ADD ||============================ //
 
-export default function AssetsForm({onClose}) {
+export default function AssetsForm({onClose, initialValues, isEdit, onAssetAdded}) {
   const navigate = useNavigate();
   const [buildings, setBuildings] = useState([]);
-  const [qrCodeValue, setQrCodeValue] = useState('');
+  const [qrCodeValue, setQrCodeValue] = useState(initialValues && initialValues.qrCode ? initialValues.qrCode : '');
   const [categories, setCategories] = useState([]); // New state for categories
   const [openCategoryModal, setOpenCategoryModal] = useState(false); // State for modal
   const [newCategoryName, setNewCategoryName] = useState(''); //
   const [vendors, setVendors] = useState([]);
-    const [users, setUsers] = useState([]);
-    const [teams, setTeams] = useState([]);
+  const [users, setUsers] = useState([]);
+  const [teams, setTeams] = useState([]);
 
   useEffect(() => {
     const fetchBuildings = async () => {
@@ -58,27 +58,27 @@ export default function AssetsForm({onClose}) {
       }
     };
 
-      const fetchUsers = async () => {
-          try {
-            const res = await api.get('/users');
-            if (res.data.success) {
-              setUsers(res.data.data);
-            }
-          } catch (err) {
-            console.error('Failed to load users', err);
-          }
-        };
-    
-        const fetchTeams = async () => {
-          try {
-            const res = await api.get('/teams');
-            if (res.data.success) {
-              setTeams(res.data.data);
-            }
-          } catch (err) {
-            console.error('Failed to load teams', err);
-          }
-        };
+    const fetchUsers = async () => {
+      try {
+        const res = await api.get('/users');
+        if (res.data.success) {
+          setUsers(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to load users', err);
+      }
+    };
+
+    const fetchTeams = async () => {
+      try {
+        const res = await api.get('/teams');
+        if (res.data.success) {
+          setTeams(res.data.data);
+        }
+      } catch (err) {
+        console.error('Failed to load teams', err);
+      }
+    };
 
     const fetchCategories = async () => {
       try {
@@ -107,14 +107,14 @@ export default function AssetsForm({onClose}) {
 
     fetchBuildings();
     fetchCategories();
-    fetchVendors(); // Fetch vendors when the component mounts
-    generateRandomQR(); // Generate a random QR code when the component mounts
-    fetchUsers(); // Fetch users when the component mounts
+    fetchVendors();
+    fetchUsers();
     fetchTeams();
+    if (!isEdit) generateRandomQR();
+    else if (initialValues && initialValues.qrCode) setQrCodeValue(initialValues.qrCode);
   }, []);
 
   const generateRandomQR = () => {
-    // Require uuid for random generation
     setQrCodeValue(uuidv4());
   };
 
@@ -123,7 +123,6 @@ export default function AssetsForm({onClose}) {
       if (event) {
         event.preventDefault();
       }
-
       const formData = new FormData();
       formData.append('assetName', values.assetName);
       formData.append('building', values.building);
@@ -138,28 +137,29 @@ export default function AssetsForm({onClose}) {
       formData.append('warrantyExpiryDate', values.warrantyExpiryDate);
       formData.append('assignee', values.assignee);
       formData.append('assignedTo', values.assignedTo);
-
       if (values.assetPhoto) {
-        formData.append('assetPhoto', values.assetPhoto); // ✅ add file
+        formData.append('assetPhoto', values.assetPhoto);
       }
-
-      const response = await api.post('/assets', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data'
-        }
-      });
-
-      if (response.data.success) {
-        setQrCodeValue(response.data.data.qrCode); // Ensure this line is present
-        toast.success('Asset added successfully!'); // Navigate after showing QR code
+      let response;
+      if (isEdit && initialValues && initialValues._id) {
+        response = await api.put(`/assets/${initialValues._id}`, formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       } else {
-        toast.error('Failed to add asset. Please try again.');
+        response = await api.post('/assets', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' }
+        });
       }
-
+      if (response.data.success) {
+        setQrCodeValue(response.data.data.qrCode || qrCodeValue);
+        toast.success(isEdit ? 'Asset updated successfully!' : 'Asset added successfully!');
+        if (onAssetAdded) onAssetAdded(response.data.data);
+        onClose();
+      } else {
+        toast.error(isEdit ? 'Failed to update asset. Please try again.' : 'Failed to add asset. Please try again.');
+      }
       setStatus({ success: true });
       setSubmitting(false);
-      onClose();
-
     } catch (err) {
       console.error('Error:', err.response ? err.response.data : err.message);
       setStatus({ success: false });
@@ -168,26 +168,42 @@ export default function AssetsForm({onClose}) {
     }
   };
 
+  // Default blank values
+  const defaultInitialValues = {
+    assetName: '',
+    building: '',
+    category: '',
+    description: '',
+    assetPhoto: null,
+    status: 'Active',
+    serialNumber: '',
+    modelNumber: '',
+    manufacturer: '',
+    purchaseDate: '',
+    purchaseCost: 0,
+    warrantyExpiryDate: '',
+    assignee: 'User',
+    assignedTo: '',
+    submit: null
+  };
+
+  // Merge initialValues (for edit) with defaults
+  const formInitialValues = initialValues ? {
+    ...defaultInitialValues,
+    ...initialValues,
+    category: initialValues.category?._id || initialValues.category || '',
+    building: initialValues.building?._id || initialValues.building || '',
+    manufacturer: initialValues.manufacturer?._id || initialValues.manufacturer || '',
+    assignedTo: initialValues.assignedTo?._id || initialValues.assignedTo || '',
+    purchaseDate: initialValues.purchaseDate ? initialValues.purchaseDate.slice(0, 10) : '',
+    warrantyExpiryDate: initialValues.warrantyExpiryDate ? initialValues.warrantyExpiryDate.slice(0, 10) : '',
+    assetPhoto: null // never pre-fill photo
+  } : defaultInitialValues;
+
   return (
     <>
       <Formik
-        initialValues={{
-          assetName: '',
-          building: '',
-          category: '',
-          description: '',
-          assetPhoto: null,
-          status: 'Active',
-          serialNumber: '',
-          modelNumber: '',
-          manufacturer: '',
-          purchaseDate: '',
-          purchaseCost: 0,
-          warrantyExpiryDate: '',
-          assignee: 'User',
-          assignedTo: '',
-          submit: null
-        }}
+        initialValues={formInitialValues}
         validationSchema={Yup.object().shape({
           assetName: Yup.string().max(255).required('Asset Name is required'),
           building: Yup.string().required('Building is required'),
@@ -205,7 +221,7 @@ export default function AssetsForm({onClose}) {
         })}
         onSubmit={processFormSubmission}
       >
-        {({ errors, handleBlur, handleChange, handleSubmit, touched, values, isSubmitting }) => (
+        {({ errors, handleBlur, handleChange, handleSubmit, touched, values, isSubmitting, setFieldValue }) => (
           <form noValidate onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid size={{ xs: 12 }}>
@@ -541,7 +557,7 @@ export default function AssetsForm({onClose}) {
               <Grid size={12}>
                 <AnimateButton>
                   <Button fullWidth type="submit" size="large" variant="contained" color="primary" disabled={isSubmitting}>
-                    Add Asset
+                    {isEdit ? 'Update Asset' : 'Add Asset'}
                   </Button>
                 </AnimateButton>
               </Grid>

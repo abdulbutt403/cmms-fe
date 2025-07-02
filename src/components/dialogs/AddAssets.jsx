@@ -4,7 +4,7 @@ import AssetsForm from '../../sections/dashboard/Forms/AssetsForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddAssetDialog({ open, onClose }) {
+export default function AddAssetDialog({ open, onClose, initialValues, isEdit, onAssetAdded }) {
   return (
     <Dialog
       open={open}
@@ -30,7 +30,7 @@ export default function AddAssetDialog({ open, onClose }) {
           }}
         >
           <Typography variant="h4" sx={{ fontWeight: 600, color: '#1a1a1a' }}>
-            Add Asset
+            {isEdit ? 'Edit Asset' : 'Add Asset'}
           </Typography>
           <Typography
             sx={{
@@ -46,7 +46,7 @@ export default function AddAssetDialog({ open, onClose }) {
             Cancel
           </Typography>
         </Stack>
-        <AssetsForm onClose={onClose} />
+        <AssetsForm onClose={onClose} initialValues={initialValues} isEdit={isEdit} onAssetAdded={onAssetAdded} />
       </DialogContent>
     </Dialog>
   );

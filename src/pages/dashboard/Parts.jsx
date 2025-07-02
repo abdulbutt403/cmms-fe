@@ -210,6 +210,7 @@ export default function PartsTable() {
         }}
         onPartAdded={editPart ? handleUpdatePart : handleAddPart}
         initialValues={editPart}
+        isEdit={!!editPart}
       />
     </Box>
   );

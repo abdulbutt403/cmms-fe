@@ -24,7 +24,7 @@ import { over } from 'lodash-es';
 
 // ============================|| BUILDING - ADD ||============================ //
 
-export default function AddBuilding() {
+export default function AddBuilding({onClose, initialValues, isEdit, onBuildingAdded}) {
   const navigate = useNavigate();
 
   const processFormSubmission = async (values, { setErrors, setStatus, setSubmitting }, event) => {
@@ -32,21 +32,31 @@ export default function AddBuilding() {
       if (event) {
         event.preventDefault();
       }
-
-      const response = await api.post('/buildings', {
-        buildingName: values.buildingName,
-        address: values.address,
-        contactPerson: values.contactPerson,
-        contactNumber: values.contactNumber,
-        email: values.email,
-      });
-
-      if (response.data.success) {
-        toast.success('Building added successfully!'); // Replace with your desired route
+      let response;
+      if (isEdit && initialValues && initialValues._id) {
+        response = await api.put(`/buildings/${initialValues._id}`, {
+          buildingName: values.buildingName,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactNumber: values.contactNumber,
+          email: values.email,
+        });
       } else {
-        toast.error('Failed to add building. Please try again.');
+        response = await api.post('/buildings', {
+          buildingName: values.buildingName,
+          address: values.address,
+          contactPerson: values.contactPerson,
+          contactNumber: values.contactNumber,
+          email: values.email,
+        });
       }
-
+      if (response.data.success) {
+        toast.success(isEdit ? 'Building updated successfully!' : 'Building added successfully!');
+        if (onBuildingAdded) onBuildingAdded(response.data.data);
+        if (onClose) onClose();
+      } else {
+        toast.error(isEdit ? 'Failed to update building. Please try again.' : 'Failed to add building. Please try again.');
+      }
       setStatus({ success: true });
       setSubmitting(false);
     } catch (err) {
@@ -57,16 +67,23 @@ export default function AddBuilding() {
     }
   };
 
+  const defaultInitialValues = {
+    buildingName: '',
+    address: '',
+    contactPerson: '',
+    contactNumber: '',
+    email: '',
+    submit: null
+  };
+
+  const formInitialValues = initialValues ? {
+    ...defaultInitialValues,
+    ...initialValues
+  } : defaultInitialValues;
+
   return (
     <Formik
-      initialValues={{
-        buildingName: '',
-        address: '',
-        contactPerson: '',
-        contactNumber: '',
-        email: '',
-        submit: null
-      }}
+      initialValues={formInitialValues}
       validationSchema={Yup.object().shape({
         buildingName: Yup.string().max(255).required('Building Name is required'),
         address: Yup.string().max(255).required('Address is required'),
@@ -194,7 +211,7 @@ export default function AddBuilding() {
             <Grid size={12}>
               <AnimateButton>
                 <Button fullWidth type="submit" size="large" variant="contained" color="primary">
-                  Submit
+                  {isEdit ? 'Update Building' : 'Add Building'}
                 </Button>
               </AnimateButton>
             </Grid>

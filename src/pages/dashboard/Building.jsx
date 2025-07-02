@@ -183,6 +183,7 @@ export default function BuildingsTable() {
         }}
         onBuildingAdded={editBuilding ? handleUpdateBuilding : handleAddBuilding}
         initialValues={editBuilding}
+        isEdit={!!editBuilding}
       />
     </Box>
   );

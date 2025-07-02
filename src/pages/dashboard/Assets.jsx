@@ -200,6 +200,7 @@ export default function AssetsTable() {
         }}
         onAssetAdded={editAsset ? handleUpdateAsset : handleAddAsset}
         initialValues={editAsset}
+        isEdit={!!editAsset}
       />
     </Box>
   );

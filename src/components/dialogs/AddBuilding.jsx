@@ -6,7 +6,7 @@ import BuildingForm from '../../sections/dashboard/Forms/BuildingForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddBuildingDialog({open, onClose, }) {
+export default function AddBuildingDialog({open, onClose, initialValues, isEdit, onBuildingAdded}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -17,12 +17,12 @@ export default function AddBuildingDialog({open, onClose, }) {
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Add User</Typography>
+            <Typography variant="h4">{isEdit ? 'Edit Building' : 'Add Building'}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={onClose} variant="body1" color="primary">
               Cancel
             </Typography>
           </Stack>
-          <BuildingForm/>
+          <BuildingForm onClose={onClose} initialValues={initialValues} isEdit={isEdit} onBuildingAdded={onBuildingAdded} />
       </DialogContent>
   </Dialog>
 
