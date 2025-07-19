@@ -86,6 +86,8 @@ export default function WorkOrder() {
   const [workOrders, setWorkOrders] = useState([]);
   const [viewMode, setViewMode] = useState('board');
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [editWorkOrder, setEditWorkOrder] = useState(null);
+  const [openEditModal, setOpenEditModal] = useState(false);
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(10);
   const [filterCategory, setFilterCategory] = useState('');
@@ -144,25 +146,31 @@ export default function WorkOrder() {
     if (!result.destination) return;
 
     const { source, destination } = result;
+    // Find the dragged work order
+    const sourceStatus = source.droppableId;
+    const destStatus = destination.droppableId;
+    if (sourceStatus === destStatus && source.index === destination.index) return;
+
+    // Find the work order in the filtered list
+    const workOrderId = filteredWorkOrders.filter((wo) => wo.status === sourceStatus)[source.index]._id;
     const updatedWorkOrders = [...workOrders];
-    const [reorderedItem] = updatedWorkOrders.splice(source.index, 1);
+    const workOrderIdx = updatedWorkOrders.findIndex((wo) => wo._id === workOrderId);
+    if (workOrderIdx === -1) return;
 
-    if (reorderedItem) {
-      reorderedItem.status = statusColumns[destination.droppableId].key;
-      updatedWorkOrders.splice(destination.index, 0, reorderedItem);
-      setWorkOrders(updatedWorkOrders);
+    // Update status locally
+    updatedWorkOrders[workOrderIdx] = { ...updatedWorkOrders[workOrderIdx], status: destStatus };
+    setWorkOrders(updatedWorkOrders);
 
-      // Optional: Send updated status to backend
-      api
-        .put(
-          `/workorders/${reorderedItem._id}`,
-          { status: reorderedItem.status },
-          {
-            headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
-          }
-        )
-        .catch((err) => console.error('Update status error:', err));
-    }
+    // Update backend
+    api
+      .put(
+        `/workorders/${workOrderId}`,
+        { status: destStatus },
+        {
+          headers: { Authorization: `Bearer ${localStorage.getItem('token')}` }
+        }
+      )
+      .catch((err) => console.error('Update status error:', err));
   };
 
   const handleChangePage = (event, newPage) => {
@@ -197,6 +205,20 @@ export default function WorkOrder() {
         }}
       />
     );
+  };
+
+  const handleEditWorkOrder = (workOrder) => {
+    setEditWorkOrder(workOrder);
+    setOpenEditModal(true);
+  };
+
+  const handleDeleteWorkOrder = async (id) => {
+    try {
+      await api.delete(`/workorders/${id}`);
+      setWorkOrders((prev) => prev.filter((wo) => wo._id !== id));
+    } catch (err) {
+      alert('Failed to delete work order');
+    }
   };
 
   if (loading) return <Typography>Loading...</Typography>;
@@ -350,10 +372,10 @@ export default function WorkOrder() {
                       {workOrder.submittedBy.firstName} {workOrder.submittedBy.lastName || ''}
                     </TableCell>
                     <TableCell>
-                      <IconButton size="small" sx={{ mr: 1 }}>
+                      <IconButton size="small" sx={{ mr: 1 }} onClick={() => handleEditWorkOrder(workOrder)}>
                         <EditOutlined />
                       </IconButton>
-                      <IconButton size="small">
+                      <IconButton size="small" onClick={() => handleDeleteWorkOrder(workOrder._id)}>
                         <DeleteOutlined />
                       </IconButton>
                     </TableCell>
@@ -378,7 +400,7 @@ export default function WorkOrder() {
       {viewMode === 'board' && (
         <DragDropContext onDragEnd={handleDragEnd}>
           <Grid container spacing={3}>
-            {statusColumns.map((column, index) => {
+            {statusColumns.map((column) => {
               const columnWorkOrders = filteredWorkOrders.filter((wo) => wo.status === column.key);
 
               return (
@@ -430,7 +452,7 @@ export default function WorkOrder() {
                     </Box>
 
                     {/* Droppable Area */}
-                    <Droppable droppableId={index.toString()}>
+                    <Droppable droppableId={column.key}>
                       {(provided, snapshot) => (
                         <Box
                           ref={provided.innerRef}
@@ -530,6 +552,7 @@ export default function WorkOrder() {
                                             color: '#374151'
                                           }
                                         }}
+                                        onClick={() => handleEditWorkOrder(workOrder)}
                                       >
                                         <EditOutlined />
                                       </IconButton>
@@ -542,6 +565,7 @@ export default function WorkOrder() {
                                             color: '#ef4444'
                                           }
                                         }}
+                                        onClick={() => handleDeleteWorkOrder(workOrder._id)}
                                       >
                                         <DeleteOutlined />
                                       </IconButton>
@@ -562,7 +586,14 @@ export default function WorkOrder() {
           </Grid>
         </DragDropContext>
       )}
-      <WorkOrderDialog openAddModal={openAddModal} handleCloseAddModal={handleCloseAddModal} />
+      {/* Add/Edit Dialog */}
+      <WorkOrderDialog
+        openAddModal={openAddModal || openEditModal}
+        handleCloseAddModal={() => { setOpenAddModal(false); setOpenEditModal(false); setEditWorkOrder(null); }}
+        initialValues={editWorkOrder}
+        isEdit={!!editWorkOrder}
+        fetchWorkOrders={fetchWorkOrders}
+      />
     </Box>
   );
 }
