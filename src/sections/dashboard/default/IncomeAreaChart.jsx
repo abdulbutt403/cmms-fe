@@ -41,17 +41,13 @@ function Legend({ items, onToggle }) {
 
 // ==============================|| INCOME AREA CHART ||============================== //
 
-export default function IncomeAreaChart({ view }) {
+export default function IncomeAreaChart({ view, createdData, completedData, labels }) {
   const theme = useTheme();
 
   const [visibility, setVisibility] = useState({
-    'Page views': true,
-    Sessions: true
+    'Created': true,
+    'Completed': true
   });
-
-  const labels = view === 'monthly' ? monthlyLabels : weeklyLabels;
-  const data1 = view === 'monthly' ? monthlyData1 : weeklyData1;
-  const data2 = view === 'monthly' ? monthlyData2 : weeklyData2;
 
   const line = theme.palette.divider;
 
@@ -61,22 +57,22 @@ export default function IncomeAreaChart({ view }) {
 
   const visibleSeries = [
     {
-      data: data1,
-      label: 'Page views',
+      data: createdData,
+      label: 'Created',
       showMark: false,
       area: true,
-      id: 'Germany',
+      id: 'Created',
       color: theme.palette.primary.main || '',
-      visible: visibility['Page views']
+      visible: visibility['Created']
     },
     {
-      data: data2,
-      label: 'Sessions',
+      data: completedData,
+      label: 'Completed',
       showMark: false,
       area: true,
-      id: 'UK',
-      color: theme.palette.primary[700] || '',
-      visible: visibility['Sessions']
+      id: 'Completed',
+      color: theme.palette.success.main || '',
+      visible: visibility['Completed']
     }
   ];
 
@@ -105,8 +101,8 @@ export default function IncomeAreaChart({ view }) {
             strokeWidth: 2
           }))}
         sx={{
-          '& .MuiAreaElement-series-Germany': { fill: "url('#myGradient1')", strokeWidth: 2, opacity: 0.8 },
-          '& .MuiAreaElement-series-UK': { fill: "url('#myGradient2')", strokeWidth: 2, opacity: 0.8 },
+          '& .MuiAreaElement-series-Created': { fill: "url('#myGradient1')", strokeWidth: 2, opacity: 0.8 },
+          '& .MuiAreaElement-series-Completed': { fill: "url('#myGradient2')", strokeWidth: 2, opacity: 0.8 },
           '& .MuiChartsAxis-directionX .MuiChartsAxis-tick': { stroke: line }
         }}
       >
@@ -116,7 +112,7 @@ export default function IncomeAreaChart({ view }) {
             <stop offset="90%" stopColor={alpha(theme.palette.background.default, 0.4)} />
           </linearGradient>
           <linearGradient id="myGradient2" gradientTransform="rotate(90)">
-            <stop offset="10%" stopColor={alpha(theme.palette.primary[700], 0.4)} />
+            <stop offset="10%" stopColor={alpha(theme.palette.success.main, 0.4)} />
             <stop offset="90%" stopColor={alpha(theme.palette.background.default, 0.4)} />
           </linearGradient>
         </defs>
@@ -128,4 +124,9 @@ export default function IncomeAreaChart({ view }) {
 
 Legend.propTypes = { items: PropTypes.array, onToggle: PropTypes.func };
 
-IncomeAreaChart.propTypes = { view: PropTypes.oneOf(['monthly', 'weekly']) };
+IncomeAreaChart.propTypes = {
+  view: PropTypes.oneOf(['monthly', 'weekly']),
+  createdData: PropTypes.array.isRequired,
+  completedData: PropTypes.array.isRequired,
+  labels: PropTypes.array.isRequired
+};

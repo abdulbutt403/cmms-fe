@@ -190,6 +190,7 @@ export default function CustomersTable() {
         }}
         onCustomerAdded={editCustomer ? handleUpdateCustomer : handleAddCustomer}
         initialValues={editCustomer}
+        isEdit={!!editCustomer}
       />
     </Box>
   );

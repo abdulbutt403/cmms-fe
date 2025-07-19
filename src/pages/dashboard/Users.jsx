@@ -38,6 +38,7 @@ export default function UsersPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [editUser, setEditUser] = useState(null);
 
   useEffect(() => {
 
@@ -60,6 +61,12 @@ export default function UsersPage() {
   const handleAddUser = (newUser) => {
     setUsers((prevUsers) => [...prevUsers, newUser]);
     setOpenAddModal(false);
+  };
+
+  const handleUpdateUser = (updatedUser) => {
+    setUsers((prevUsers) => prevUsers.map((user) => user._id === updatedUser._id ? updatedUser : user));
+    setOpenAddModal(false);
+    setEditUser(null);
   };
 
   const handleDeleteUser = async (userId) => {
@@ -108,7 +115,7 @@ export default function UsersPage() {
           </FormControl>
         </Box>
 
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenAddModal(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditUser(null); setOpenAddModal(true); }}>
           Add User
         </Button>
       </Box>
@@ -142,7 +149,7 @@ export default function UsersPage() {
                   </TableCell>
                   <TableCell>{new Date(user.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <IconButton size="small">
+                    <IconButton size="small" onClick={() => { setEditUser(user); setOpenAddModal(true); }}>
                       <EditIcon />
                     </IconButton>
                     <IconButton size="small" onClick={() => handleDeleteUser(user._id)}>
@@ -169,9 +176,12 @@ export default function UsersPage() {
         open={openAddModal}
         onClose={() => {
           setOpenAddModal(false);
-          fetchUsers(); // Refresh the user list after closing the modal
+          setEditUser(null);
+          fetchUsers();
         }}
-        onSave={handleAddUser}
+        onSave={editUser ? handleUpdateUser : handleAddUser}
+        initialValues={editUser}
+        isEdit={!!editUser}
       />
     </Box>
   );

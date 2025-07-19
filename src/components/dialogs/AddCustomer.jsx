@@ -6,7 +6,7 @@ import CustomerRegister from '../../sections/dashboard/Forms/CustomerForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddCustomerDialog({open, onClose, setOpen, fetchCustomers }) {
+export default function AddCustomerDialog({open, onClose, setOpen, fetchCustomers, initialValues, isEdit}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -17,14 +17,13 @@ export default function AddCustomerDialog({open, onClose, setOpen, fetchCustomer
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Add Customer</Typography>
+            <Typography variant="h4">{isEdit ? 'Edit Customer' : 'Add Customer'}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={onClose} variant="body1" color="primary">
               Cancel
             </Typography>
           </Stack>
-          <CustomerRegister setOpen={setOpen} fetchCustomers={fetchCustomers} />
+          <CustomerRegister setOpen={setOpen} fetchCustomers={fetchCustomers} initialValues={initialValues} isEdit={isEdit} />
       </DialogContent>
   </Dialog>
-
   );
 }

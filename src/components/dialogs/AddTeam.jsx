@@ -6,7 +6,7 @@ import UserTeamForm from '../../sections/dashboard/Forms/UserTeamForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddUserDialog({open, onClose}) {
+export default function AddUserDialog({open, onClose, initialValues, isEdit, onSave}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -17,14 +17,13 @@ export default function AddUserDialog({open, onClose}) {
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Add Team</Typography>
+            <Typography variant="h4">{isEdit ? 'Edit Team' : 'Add Team'}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={onClose} variant="body1" color="primary">
               Cancel
             </Typography>
           </Stack>
-          <UserTeamForm formType={'Team'} closeModal={onClose}/>
+          <UserTeamForm formType={'Team'} closeModal={onClose} initialValues={initialValues} isEdit={isEdit} onSave={onSave}/>
       </DialogContent>
   </Dialog>
-
   );
 }

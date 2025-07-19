@@ -31,7 +31,7 @@ import api from '../../../api/api';
 
 // ============================|| VENDOR - ADD ||============================ //
 
-export default function AddVendor({setOpen, fetchVendors}) {
+export default function AddVendor({setOpen, fetchVendors, initialValues, isEdit}) {
   const navigate = useNavigate();
   const [vendorTypes, setVendorTypes] = useState([]);
   const [openVendorTypeModal, setOpenVendorTypeModal] = useState(false);
@@ -58,28 +58,19 @@ export default function AddVendor({setOpen, fetchVendors}) {
       if (event) {
         event.preventDefault();
       }
-
-      const response = await api.post('/vendors', {
-        vendorName: values.vendorName,
-        vendorType: values.vendorType,
-        price: values.price,
-        address: values.address,
-        website: values.website,
-        contactName: values.contactName,
-        contactPhone: values.contactPhone,
-        contactEmail: values.contactEmail,
-        description: values.description,
-      });
-
-      if (response.data.success) {
-        toast.success('Vendor added successfully!');// Replace with your desired route
-        setOpen(false);
-        fetchVendors(); // Refresh the vendor list
-
+      let response;
+      if (isEdit && initialValues && initialValues._id) {
+        response = await api.put(`/vendors/${initialValues._id}`, values);
       } else {
-        toast.error('Failed to add vendor. Please try again.');
+        response = await api.post('/vendors', values);
       }
-
+      if (response.data.success) {
+        toast.success(isEdit ? 'Vendor updated successfully!' : 'Vendor added successfully!');
+        setOpen(false);
+        fetchVendors();
+      } else {
+        toast.error(isEdit ? 'Failed to update vendor. Please try again.' : 'Failed to add vendor. Please try again.');
+      }
       setStatus({ success: true });
       setSubmitting(false);
     } catch (err) {
@@ -87,14 +78,24 @@ export default function AddVendor({setOpen, fetchVendors}) {
       setStatus({ success: false });
       setErrors({ submit: err.response ? err.response.data.message : err.message });
       setSubmitting(false);
-
     }
   };
 
   return (
     <>
       <Formik
-        initialValues={{
+        initialValues={initialValues ? {
+          vendorName: initialValues.vendorName || '',
+          vendorType: initialValues.vendorType?._id || initialValues.vendorType || '',
+          price: initialValues.price || 0,
+          address: initialValues.address || '',
+          website: initialValues.website || '',
+          contactName: initialValues.contactName || '',
+          contactPhone: initialValues.contactPhone || '',
+          contactEmail: initialValues.contactEmail || '',
+          description: initialValues.description || '',
+          submit: null
+        } : {
           vendorName: '',
           vendorType: '',
           price: 0,
@@ -106,6 +107,7 @@ export default function AddVendor({setOpen, fetchVendors}) {
           description: '',
           submit: null
         }}
+        enableReinitialize
         validationSchema={Yup.object().shape({
           vendorName: Yup.string().max(255).required('Vendor Name is required'),
           vendorType: Yup.string().required('Vendor Type is required'),
@@ -126,7 +128,7 @@ export default function AddVendor({setOpen, fetchVendors}) {
         })}
         onSubmit={processFormSubmission}
       >
-        {({ errors, handleBlur, handleChange, handleSubmit, touched, values }) => (
+        {({ errors, handleBlur, handleChange, handleSubmit, touched, values, isSubmitting }) => (
           <form noValidate onSubmit={handleSubmit}>
             <Grid container spacing={3}>
               <Grid size={{ xs: 12 }}>
@@ -335,8 +337,8 @@ export default function AddVendor({setOpen, fetchVendors}) {
               )}
               <Grid size={12}>
                 <AnimateButton>
-                  <Button fullWidth type="submit" size="large" variant="contained" color="primary">
-                    Add Vendor
+                  <Button fullWidth type="submit" size="large" variant="contained" color="primary" disabled={isSubmitting}>
+                    {isEdit ? 'Update Vendor' : 'Add Vendor'}
                   </Button>
                 </AnimateButton>
               </Grid>

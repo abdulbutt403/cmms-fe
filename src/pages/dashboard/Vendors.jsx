@@ -138,7 +138,7 @@ export default function VendorsTable() {
               <TableRow>
                 <TableCell>Vendor Name</TableCell>
                 <TableCell>Vendor Type</TableCell>
-                <TableCell>Status</TableCell>
+                <TableCell>Contact Name</TableCell>
                 <TableCell>Contact Phone</TableCell>
                 <TableCell>Created At</TableCell>
                 <TableCell>Actions</TableCell>
@@ -151,7 +151,7 @@ export default function VendorsTable() {
                   <TableRow key={vendor._id}>
                     <TableCell>{vendor.vendorName || 'N/A'}</TableCell>
                     <TableCell>{vendor.vendorType?.name || vendor.vendorType || 'N/A'}</TableCell>
-                    <TableCell>{vendor.status || 'N/A'}</TableCell>
+                    <TableCell>{vendor.contactName || 'N/A'}</TableCell>
                     <TableCell>{vendor.contactPhone || 'N/A'}</TableCell>
                     <TableCell>{new Date(vendor.createdAt).toLocaleDateString()}</TableCell>
                     <TableCell>
@@ -188,6 +188,7 @@ export default function VendorsTable() {
         }}
         onVendorAdded={editVendor ? handleUpdateVendor : handleAddVendor}
         initialValues={editVendor}
+        isEdit={!!editVendor}
       />
     </Box>
   );

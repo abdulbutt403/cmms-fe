@@ -31,6 +31,7 @@ export default function TeamsPage() {
   const [page, setPage] = useState(0);
   const [rowsPerPage, setRowsPerPage] = useState(5);
   const [openAddModal, setOpenAddModal] = useState(false);
+  const [editTeam, setEditTeam] = useState(null);
 
   useEffect(() => {
 
@@ -53,6 +54,12 @@ export default function TeamsPage() {
   const handleAddTeam = (newTeam) => {
     setTeams((prevTeams) => [...prevTeams, newTeam]);
     setOpenAddModal(false);
+  };
+
+  const handleUpdateTeam = (updatedTeam) => {
+    setTeams((prevTeams) => prevTeams.map((team) => team._id === updatedTeam._id ? updatedTeam : team));
+    setOpenAddModal(false);
+    setEditTeam(null);
   };
 
   const handleDeleteTeam = async (teamId) => {
@@ -115,7 +122,7 @@ export default function TeamsPage() {
           </FormControl>
         </Box>
 
-        <Button variant="contained" startIcon={<AddIcon />} onClick={() => setOpenAddModal(true)}>
+        <Button variant="contained" startIcon={<AddIcon />} onClick={() => { setEditTeam(null); setOpenAddModal(true); }}>
           Add Team
         </Button>
       </Box>
@@ -146,7 +153,7 @@ export default function TeamsPage() {
                   </TableCell>
                   <TableCell>{new Date(team.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <IconButton size="small">
+                    <IconButton size="small" onClick={() => { setEditTeam(team); setOpenAddModal(true); }}>
                       <EditIcon />
                     </IconButton>
                     <IconButton size="small" onClick={() => handleDeleteTeam(team._id)}>
@@ -173,9 +180,12 @@ export default function TeamsPage() {
         open={openAddModal}
         onClose={() => {
           setOpenAddModal(false);
-          fetchTeams(); // Refresh teams after adding a new one
+          setEditTeam(null);
+          fetchTeams();
         }}
-        onSave={handleAddTeam}
+        onSave={editTeam ? handleUpdateTeam : handleAddTeam}
+        initialValues={editTeam}
+        isEdit={!!editTeam}
       />
     </Box>
   );

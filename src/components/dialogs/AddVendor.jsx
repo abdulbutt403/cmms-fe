@@ -7,7 +7,7 @@ import VendorForm from '../../sections/dashboard/Forms/VendorForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function AddVendorDialog({open, onClose, setOpen, fetchVendors}) {
+export default function AddVendorDialog({open, onClose, setOpen, fetchVendors, initialValues, isEdit}) {
   return (
  <Dialog open={open} onClose={onClose} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -18,14 +18,13 @@ export default function AddVendorDialog({open, onClose, setOpen, fetchVendors}) 
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Add Vendor</Typography>
+            <Typography variant="h4">{isEdit ? 'Edit Vendor' : 'Add Vendor'}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={onClose} variant="body1" color="primary">
               Cancel
             </Typography>
           </Stack>
-          <VendorForm setOpen={setOpen} fetchVendors={fetchVendors} />
+          <VendorForm setOpen={setOpen} fetchVendors={fetchVendors} initialValues={initialValues} isEdit={isEdit} />
       </DialogContent>
   </Dialog>
-
   );
 }

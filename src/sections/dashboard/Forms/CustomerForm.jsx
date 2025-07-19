@@ -29,7 +29,7 @@ import toast from 'react-hot-toast';
 
 // ============================|| ADD CUSTOMER FORM ||============================ //
 
-const AddCustomerForm = ({ setOpen, fetchCustomers }) => {
+const AddCustomerForm = ({ setOpen, fetchCustomers, initialValues, isEdit }) => {
   const [customerTypes, setCustomerTypes] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [newCustomerTypeName, setNewCustomerTypeName] = useState('');
@@ -80,15 +80,20 @@ const AddCustomerForm = ({ setOpen, fetchCustomers }) => {
   // Handle form submission
   const handleSubmitCustomer = async (values, { setSubmitting, resetForm, setErrors }) => {
     try {
-      const response = await api.post('/customers', values);
+      let response;
+      if (isEdit && initialValues && initialValues._id) {
+        response = await api.put(`/customers/${initialValues._id}`, values);
+      } else {
+        response = await api.post('/customers', values);
+      }
       if (response.data.success) {
         resetForm();
-        toast.success('Customer created successfully!');
+        toast.success(isEdit ? 'Customer updated successfully!' : 'Customer created successfully!');
         setOpen(false);
-        fetchCustomers(); // Assuming fetchCustomers is defined in the parent component to refresh the customer list
+        fetchCustomers();
       }
     } catch (error) {
-      setErrors({ submit: error.response?.data?.message || 'Failed to create customer' });
+      setErrors({ submit: error.response?.data?.message || (isEdit ? 'Failed to update customer' : 'Failed to create customer') });
     } finally {
       setSubmitting(false);
     }
@@ -97,7 +102,17 @@ const AddCustomerForm = ({ setOpen, fetchCustomers }) => {
   return (
     <>
       <Formik
-        initialValues={{
+        initialValues={initialValues ? {
+          name: initialValues.name || '',
+          customerType: initialValues.customerType?._id || initialValues.customerType || '',
+          address: initialValues.address || '',
+          website: initialValues.website || '',
+          contactName: initialValues.contactName || '',
+          contactPhone: initialValues.contactPhone || '',
+          contactEmail: initialValues.contactEmail || '',
+          description: initialValues.description || '',
+          submit: null
+        } : {
           name: '',
           customerType: '',
           address: '',
@@ -108,6 +123,7 @@ const AddCustomerForm = ({ setOpen, fetchCustomers }) => {
           description: '',
           submit: null
         }}
+        enableReinitialize
         validationSchema={Yup.object().shape({
           name: Yup.string().required('Name is required').trim(),
           customerType: Yup.string().required('Customer Type is required'),
@@ -307,8 +323,8 @@ const AddCustomerForm = ({ setOpen, fetchCustomers }) => {
               )}
               <Grid size={12}>
                 <AnimateButton>
-                  <Button disableElevation disabled={isSubmitting} fullWidth size="large" type="submit" variant="contained" color="primary">
-                    Add Customer
+                  <Button fullWidth type="submit" size="large" variant="contained" color="primary" disabled={isSubmitting}>
+                    {isEdit ? 'Update Customer' : 'Add Customer'}
                   </Button>
                 </AnimateButton>
               </Grid>

@@ -31,6 +31,9 @@ import avatar2 from 'assets/images/users/avatar-2.png';
 import avatar3 from 'assets/images/users/avatar-3.png';
 import avatar4 from 'assets/images/users/avatar-4.png';
 
+import React, { useEffect, useState } from 'react';
+import api from '../../api/api';
+
 // Enhanced avatar style with softer appearance
 const avatarSX = {
   width: 40,
@@ -76,6 +79,100 @@ const listItemSX = {
 // ==============================|| DASHBOARD - DEFAULT ||============================== //
 
 export default function DashboardDefault() {
+  const [assetCount, setAssetCount] = useState(0);
+  const [vendorCount, setVendorCount] = useState(0);
+  const [userCount, setUserCount] = useState(0);
+  const [customerCount, setCustomerCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  const [workOrders, setWorkOrders] = useState([]);
+
+  useEffect(() => {
+    async function fetchCounts() {
+      setLoading(true);
+      try {
+        const [assetsRes, vendorsRes, usersRes, customersRes, workOrdersRes] = await Promise.all([
+          api.get('/assets'),
+          api.get('/vendors'),
+          api.get('/users'),
+          api.get('/customers'),
+          api.get('/workorders'),
+        ]);
+        setAssetCount(Array.isArray(assetsRes.data.data) ? assetsRes.data.data.length : 0);
+        setVendorCount(Array.isArray(vendorsRes.data.data) ? vendorsRes.data.data.length : 0);
+        setUserCount(Array.isArray(usersRes.data.data) ? usersRes.data.data.length : 0);
+        setCustomerCount(Array.isArray(customersRes.data.data) ? customersRes.data.data.length : 0);
+        setWorkOrders(Array.isArray(workOrdersRes.data.data) ? workOrdersRes.data.data : []);
+      } catch (err) {
+        setAssetCount(0);
+        setVendorCount(0);
+        setUserCount(0);
+        setCustomerCount(0);
+        setWorkOrders([]);
+      } finally {
+        setLoading(false);
+      }
+    }
+    fetchCounts();
+  }, []);
+
+  // Chart data logic
+  function getChartData(view) {
+    const now = new Date();
+    if (view === 'monthly') {
+      // Last 12 months
+      const months = [];
+      const monthLabels = [];
+      for (let i = 11; i >= 0; i--) {
+        const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+        months.push(d);
+        monthLabels.push(d.toLocaleString('default', { month: 'short', year: '2-digit' }));
+      }
+      const createdData = months.map((month, idx) => {
+        const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+        return workOrders.filter(w => {
+          const created = new Date(w.createdAt);
+          return created >= month && created < nextMonth;
+        }).length;
+      });
+      const completedData = months.map((month, idx) => {
+        const nextMonth = new Date(month.getFullYear(), month.getMonth() + 1, 1);
+        return workOrders.filter(w => {
+          if (w.status !== 'Completed') return false;
+          const completed = new Date(w.updatedAt || w.createdAt);
+          return completed >= month && completed < nextMonth;
+        }).length;
+      });
+      return { labels: monthLabels, createdData, completedData };
+    } else {
+      // Current week (Sun-Sat)
+      const startOfWeek = new Date(now);
+      startOfWeek.setDate(now.getDate() - now.getDay());
+      startOfWeek.setHours(0,0,0,0);
+      const labels = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const createdData = Array(7).fill(0);
+      const completedData = Array(7).fill(0);
+      workOrders.forEach(w => {
+        const created = new Date(w.createdAt);
+        if (created >= startOfWeek && created < new Date(startOfWeek.getTime() + 7*24*60*60*1000)) {
+          const day = created.getDay();
+          createdData[day]++;
+        }
+        if (w.status === 'Completed') {
+          const completed = new Date(w.updatedAt || w.createdAt);
+          if (completed >= startOfWeek && completed < new Date(startOfWeek.getTime() + 7*24*60*60*1000)) {
+            const day = completed.getDay();
+            completedData[day]++;
+          }
+        }
+      });
+      return { labels, createdData, completedData };
+    }
+  }
+
+  // State for chart view toggle
+  const [chartView, setChartView] = useState('monthly');
+  const { labels, createdData, completedData } = getChartData(chartView);
+
   return (
     <Grid container rowSpacing={4.5} columnSpacing={2.75}>
       {/* row 1 */}
@@ -95,22 +192,22 @@ export default function DashboardDefault() {
       </Grid>
       <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Box sx={cardSX}>
-          <AnalyticEcommerce title="Total Page Views" count="4,42,236" percentage={59.3} extra="35,000" />
+          <AnalyticEcommerce title="Total Assets" count={loading ? '...' : assetCount} />
         </Box>
       </Grid>
       <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Box sx={cardSX}>
-          <AnalyticEcommerce title="Total Users" count="78,250" percentage={70.5} extra="8,900" />
+          <AnalyticEcommerce title="Total Vendors" count={loading ? '...' : vendorCount} />
         </Box>
       </Grid>
       <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Box sx={cardSX}>
-          <AnalyticEcommerce title="Total Order" count="18,800" percentage={27.4} isLoss color="warning" extra="1,943" />
+          <AnalyticEcommerce title="Total Users" count={loading ? '...' : userCount} />
         </Box>
       </Grid>
       <Grid size={{ xs: 12, sm: 6, md: 4, lg: 3 }}>
         <Box sx={cardSX}>
-          <AnalyticEcommerce title="Total Sales" count="35,078" percentage={27.4} isLoss color="warning" extra="20,395" />
+          <AnalyticEcommerce title="Total Customers" count={loading ? '...' : customerCount} />
         </Box>
       </Grid>
       <Grid sx={{ display: { sm: 'none', md: 'block', lg: 'none' } }} size={{ md: 8 }} />
@@ -118,7 +215,7 @@ export default function DashboardDefault() {
       {/* row 2 */}
       <Grid size={{ xs: 12, md: 7, lg: 8 }}>
         <Box sx={cardSX}>
-          <UniqueVisitorCard />
+          <UniqueVisitorCard view={chartView} setView={setChartView} createdData={createdData} completedData={completedData} labels={labels} />
         </Box>
       </Grid>
       <Grid size={{ xs: 12, md: 5, lg: 4 }}>

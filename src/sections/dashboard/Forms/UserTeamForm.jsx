@@ -15,7 +15,7 @@ import AnimateButton from 'components/@extended/AnimateButton';
 import api from '../../../api/api';
 import toast from 'react-hot-toast';
 
-export default function UserTeamForm({formType, closeModal}) {
+export default function UserTeamForm({formType, closeModal, initialValues, isEdit, onSave}) {
   const [users, setUsers] = useState([]);
 
   useEffect(() => {
@@ -40,54 +40,87 @@ export default function UserTeamForm({formType, closeModal}) {
     phone: formType === 'User' ? Yup.string().required('Phone is required') : Yup.string(),
     forAlertNotification: formType === 'User' ? Yup.string().required('For Alert Notification is required') : Yup.string(),
     jobTitle: formType === 'User' ? Yup.string().required('Job Title is required') : Yup.string(),
-    password: formType === 'User' ? Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required') : Yup.string(),
+    password: formType === 'User' && !isEdit ? Yup.string().min(6, 'Password must be at least 6 characters').required('Password is required') : Yup.string(),
     userRole: formType === 'User' ? Yup.string().required('User Role is required') : Yup.string(),
     teamName: formType === 'Team' ? Yup.string().required('Team Name is required') : Yup.string(),
     members: formType === 'Team' ? Yup.array().min(1, 'At least one member is required').required('Members are required') : Yup.array()
   });
 
-  const handleSubmit = async (values) => {
-    try {
-      if (formType === 'User') {
-        delete values.teamName;
-        delete values.members;
-        delete values.phone;
-        delete values.forAlertNotification;
-        const res = await api.post('/users', values);
-        if (res.data.success) {
-          toast.success('User added successfully!');
-          closeModal(); // Close modal after successful submission
-        }
-      } else {
-        const { teamName, members } = values;
-        const res = await api.post('/teams', { name: teamName, members });
-        if (res.data.success) {
-          toast.success('Team added successfully!');
-          closeModal(); // Close modal after successful submission
-        }
-      }
-    } catch (err) {
-      console.error('Failed to submit form', err);
-      toast.error('Error submitting form');
-    }
-  };
-
   return (
     <Formik
-      initialValues={{
-        firstName: '',
-        lastName: '',
-        email: '',
-        phone: '',
-        forAlertNotification: '',
-        jobTitle: '',
-        password: '',
-        userRole: '',
-        teamName: '',
-        members: []
-      }}
+      initialValues={
+        initialValues
+          ? {
+              firstName: initialValues.firstName || '',
+              lastName: initialValues.lastName || '',
+              email: initialValues.email || '',
+              phone: initialValues.phone || initialValues.phoneNumber || '',
+              forAlertNotification: initialValues.forAlertNotification || initialValues.alertNotification || '',
+              jobTitle: initialValues.jobTitle || '',
+              password: '',
+              userRole: initialValues.userRole || '',
+              teamName: initialValues.teamName || '',
+              members: initialValues?.members?.map(m => m._id || m) || []
+            }
+          : {
+              firstName: '',
+              lastName: '',
+              email: '',
+              phone: '',
+              forAlertNotification: '',
+              jobTitle: '',
+              password: '',
+              userRole: '',
+              teamName: '',
+              members: []
+            }
+      }
+      enableReinitialize
       validationSchema={validationSchema}
-      onSubmit={handleSubmit}
+      onSubmit={async (values) => {
+        try {
+          if (formType === 'User') {
+            const submitValues = { ...values };
+            // Map frontend fields to backend-required fields
+            submitValues.phoneNumber = submitValues.phone;
+            submitValues.alertNotification = submitValues.forAlertNotification;
+            if (!submitValues.password) {
+              delete submitValues.password;
+            }
+            delete submitValues.teamName;
+            delete submitValues.members;
+            delete submitValues.phone;
+            delete submitValues.forAlertNotification;
+            let res;
+            if (isEdit && initialValues && initialValues._id) {
+              res = await api.put(`/users/${initialValues._id}`, submitValues);
+            } else {
+              res = await api.post('/users', submitValues);
+            }
+            if (res.data.success) {
+              toast.success(isEdit ? 'User updated successfully!' : 'User added successfully!');
+              if (onSave) onSave(res.data.data);
+              closeModal();
+            }
+          } else {
+            const { teamName, members } = values;
+            let res;
+            if (isEdit && initialValues && initialValues._id) {
+              res = await api.put(`/teams/${initialValues._id}`, { name: teamName, members });
+            } else {
+              res = await api.post('/teams', { name: teamName, members });
+            }
+            if (res.data.success) {
+              toast.success(isEdit ? 'Team updated successfully!' : 'Team added successfully!');
+              if (onSave) onSave(res.data.data);
+              closeModal();
+            }
+          }
+        } catch (err) {
+          console.error('Failed to submit form', err);
+          toast.error('Error submitting form');
+        }
+      }}
     >
       {({ errors, handleBlur, handleChange, touched, values, setFieldValue }) => (
         <Form noValidate style={{overflow: 'hidden'}}>
