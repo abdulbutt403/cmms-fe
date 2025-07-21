@@ -6,7 +6,7 @@ import FirebaseRegister from 'sections/dashboard/Forms/WorkOrderForm';
 
 // ================================|| JWT - REGISTER ||================================ //
 
-export default function WorkOrderDialog({openAddModal, handleCloseAddModal}) {
+export default function WorkOrderDialog({openAddModal, handleCloseAddModal, initialValues, isEdit, fetchWorkOrders}) {
   return (
  <Dialog open={openAddModal} onClose={handleCloseAddModal} maxWidth="md" fullWidth    sx={{
         '& .MuiDialog-paper': {
@@ -22,7 +22,7 @@ export default function WorkOrderDialog({openAddModal, handleCloseAddModal}) {
               Cancel
             </Typography>
           </Stack>
-          <FirebaseRegister closeModal={handleCloseAddModal} />
+          <FirebaseRegister closeModal={handleCloseAddModal} initialValues={initialValues} isEdit={isEdit} fetchWorkOrders={fetchWorkOrders} />
       </DialogContent>
   </Dialog>
 

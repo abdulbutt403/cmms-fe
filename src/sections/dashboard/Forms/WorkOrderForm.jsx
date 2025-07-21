@@ -31,14 +31,30 @@ import api from '../../../api/api';
 
 // ============================|| WORK ORDER - REGISTER ||============================ //
 
-export default function WorkOrderRegister({closeModal}) {
-  const [tasks, setTasks] = useState([]);
-  const [parts, setParts] = useState([]);
+export default function WorkOrderRegister({closeModal, initialValues, isEdit, fetchWorkOrders}) {
+  // Helper to get partName by id
+  const getPartName = (id) => {
+    const found = allParts.find((p) => p._id === id);
+    return found ? found.partName : id;
+  };
+
+  // If editing, pre-fill tasks, parts, and other state
+  const [tasks, setTasks] = useState(initialValues && initialValues.tasks ? initialValues.tasks : []);
+  const [parts, setParts] = useState(() => {
+    if (initialValues && initialValues.parts && initialValues.parts.length && isEdit) {
+      return initialValues.parts.map((part) => ({
+        partId: part.partId?._id || part.partId || '',
+        partName: part.partName || getPartName(part.partId?._id || part.partId || ''),
+        quantity: part.quantity || 1
+      }));
+    }
+    return [];
+  });
   const [newTask, setNewTask] = useState({ taskName: '', taskType: '' });
-  const [newPart, setNewPart] = useState({ partId: "", quantity: 0 }); 
-  const [isRecurring, setIsRecurring] = useState(false);
+  const [newPart, setNewPart] = useState({ partId: '', quantity: 0 });
+  const [isRecurring, setIsRecurring] = useState(initialValues && initialValues.isRecurring ? true : false);
   const [photo, setPhoto] = useState(null);
-  const [recurringWO, setRecurringWO] = useState('- Select -');
+  const [recurringWO, setRecurringWO] = useState(initialValues && initialValues.recurringWO ? initialValues.recurringWO : '- Select -');
   const [categories, setCategories] = useState([]);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
   const [newCategory, setNewCategory] = useState('');
@@ -49,6 +65,19 @@ export default function WorkOrderRegister({closeModal}) {
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [allParts, setAllParts] = useState([]);
+
+  useEffect(() => {
+    if (isEdit && initialValues) {
+      setTasks(initialValues.tasks || []);
+      setParts(
+        (initialValues.parts || []).map(part => ({
+          partId: part.partId?._id || part.partId || '',
+          partName: part.partName || getPartName(part.partId?._id || part.partId || ''),
+          quantity: part.quantity || 1
+        }))
+      );
+    }
+  }, [isEdit, initialValues]);
 
   const handleAddTask = () => {
     if (newTask.taskName.trim()) {
@@ -133,6 +162,20 @@ export default function WorkOrderRegister({closeModal}) {
     fetchTeams();
     fetchParts();
   }, []);
+
+  // Fetch assets for building in edit mode
+  useEffect(() => {
+    if (isEdit && initialValues && initialValues.building) {
+      const buildingId = initialValues.building._id || initialValues.building;
+      if (buildingId) {
+        api.get(`/assets/building/${buildingId}`).then((res) => {
+          if (res.data.success) {
+            setAssets(res.data.data);
+          }
+        });
+      }
+    }
+  }, [isEdit, initialValues, allParts]);
 
   const handleBuildingChange = async (e, setFieldValue) => {
     const buildingId = e.target.value;
@@ -276,23 +319,40 @@ export default function WorkOrderRegister({closeModal}) {
     }
   };
 
+  // Prepare Formik initial values
+  const formikInitialValues = initialValues && isEdit ? {
+    title: initialValues.title || '',
+    startDate: initialValues.startDate ? initialValues.startDate.slice(0, 10) : '',
+    dueDate: initialValues.dueDate ? initialValues.dueDate.slice(0, 10) : '',
+    priority: initialValues.priority || 'Medium',
+    category: initialValues.category || '',
+    description: initialValues.description || '',
+    building: initialValues.building?._id || initialValues.building || '',
+    asset: initialValues.asset?._id || initialValues.asset || '',
+    assigneeType: initialValues.assigneeType || 'Individual',
+    assignedTo: initialValues.assignedTo?._id || initialValues.assignedTo || '',
+    vendor: initialValues.vendor?._id || initialValues.vendor || '',
+    recurringWO: initialValues.recurringWO || '',
+  } : {
+    title: '',
+    startDate: '',
+    dueDate: '',
+    priority: 'Medium',
+    category: '',
+    description: '',
+    building: '',
+    asset: '',
+    assigneeType: 'Individual',
+    assignedTo: '',
+    vendor: '',
+    recurringWO: ''
+  };
+
   return (
     <>
       <Formik
-        initialValues={{
-          title: '',
-          startDate: '',
-          dueDate: '',
-          priority: 'Medium',
-          category: '',
-          description: '',
-          building: '',
-          asset: '',
-          assigneeType: 'Individual',
-          assignedTo: '',
-          vendor: '',
-          recurringWO: ''
-        }}
+        enableReinitialize
+        initialValues={formikInitialValues}
         validationSchema={Yup.object().shape({
           title: Yup.string().required('Work Order Title is required'),
           startDate: Yup.date().required('Start Date is required'),
