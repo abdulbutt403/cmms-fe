@@ -590,7 +590,7 @@ export default function WorkOrder() {
       <WorkOrderDialog
         openAddModal={openAddModal || openEditModal}
         handleCloseAddModal={() => { setOpenAddModal(false); setOpenEditModal(false); setEditWorkOrder(null); fetchWorkOrders(); }}
-        initialValues={editWorkOrder}
+        initialValues={editWorkOrder }
         isEdit={!!editWorkOrder}
         fetchWorkOrders={fetchWorkOrders}
       />

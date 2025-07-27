@@ -260,6 +260,7 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
       
       parts.forEach((part, index) => {
         formData.append(`parts[${index}][partId]`, part.partId);
+        formData.append(`parts[${index}][partName]`, part.partName);
         formData.append(`parts[${index}][quantity]`, part.quantity);
       });
 
@@ -269,7 +270,7 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
 
       const method = isEdit ? 'put' : 'post';
 
-      const response = await api[method]("/workorders", formData, {
+      const response = await api[method](isEdit ? `/workorders/${initialValues._id}` : "/workorders", formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "multipart/form-data",
@@ -336,7 +337,7 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
     description: initialValues.description || '',
     building: initialValues.building?._id || initialValues.building || '',
     asset: initialValues.asset?._id || initialValues.asset || '',
-    assigneeType: initialValues.assigneeType || 'Individual',
+    assigneeType: initialValues.assigneeType || initialValues.assigneeType === "User" ? 'Individual' : 'Team',
     assignedTo: initialValues.assignedTo?._id || initialValues.assignedTo || '',
     vendor: initialValues.vendor?._id || initialValues.vendor || '',
     recurringWO: initialValues.recurringWO || '',
