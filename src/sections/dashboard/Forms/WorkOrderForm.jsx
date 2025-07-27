@@ -32,24 +32,12 @@ import api from '../../../api/api';
 // ============================|| WORK ORDER - REGISTER ||============================ //
 
 export default function WorkOrderRegister({closeModal, initialValues, isEdit, fetchWorkOrders}) {
+
+  console.log("initialValues", initialValues);
   // Helper to get partName by id
-  const getPartName = (id) => {
-    const found = allParts.find((p) => p._id === id);
-    return found ? found.partName : id;
-  };
 
   // If editing, pre-fill tasks, parts, and other state
   const [tasks, setTasks] = useState(initialValues && initialValues.tasks ? initialValues.tasks : []);
-  const [parts, setParts] = useState(() => {
-    if (initialValues && initialValues.parts && initialValues.parts.length && isEdit) {
-      return initialValues.parts.map((part) => ({
-        partId: part.partId?._id || part.partId || '',
-        partName: part.partName || getPartName(part.partId?._id || part.partId || ''),
-        quantity: part.quantity || 1
-      }));
-    }
-    return [];
-  });
   const [newTask, setNewTask] = useState({ taskName: '', taskType: '' });
   const [newPart, setNewPart] = useState({ partId: '', quantity: 0 });
   const [isRecurring, setIsRecurring] = useState(initialValues && initialValues.isRecurring ? true : false);
@@ -65,6 +53,23 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
   const [users, setUsers] = useState([]);
   const [teams, setTeams] = useState([]);
   const [allParts, setAllParts] = useState([]);
+
+  const getPartName = (id) => {
+    const found = allParts.find((p) => p._id === id);
+    return found ? found.partName : id;
+  };
+
+  const [parts, setParts] = useState(() => {
+    if (initialValues && initialValues.parts && initialValues.parts.length && isEdit) {
+      return initialValues.parts.map((part) => ({
+        partId: part.partId?._id || part.partId || '',
+        partName: part.partName || getPartName(part.partId?._id || part.partId || ''),
+        quantity: part.quantity || 1
+      }));
+    }
+    return [];
+  });
+
 
   useEffect(() => {
     if (isEdit && initialValues) {
@@ -262,7 +267,9 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
         formData.append("photo", photo);
       }
 
-      const response = await api.post("/workorders", formData, {
+      const method = isEdit ? 'put' : 'post';
+
+      const response = await api[method]("/workorders", formData, {
         headers: {
           Authorization: `Bearer ${localStorage.getItem("token")}`,
           "Content-Type": "multipart/form-data",

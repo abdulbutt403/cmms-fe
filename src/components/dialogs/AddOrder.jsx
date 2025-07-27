@@ -17,7 +17,7 @@ export default function WorkOrderDialog({openAddModal, handleCloseAddModal, init
       }}>
       <DialogContent sx={{ p: 3 }}>
         <Stack direction="row" sx={{ alignItems: 'baseline', justifyContent: 'space-between', mb: { xs: 5, sm: 5 } }}>
-            <Typography variant="h4">Work Order Information</Typography>
+            <Typography variant="h4">Work Order {isEdit ? `Edit` : `Information`}</Typography>
             <Typography sx={{cursor: 'pointer',  textDecoration: 'none'}}  onClick={handleCloseAddModal} variant="body1" color="primary">
               Cancel
             </Typography>
