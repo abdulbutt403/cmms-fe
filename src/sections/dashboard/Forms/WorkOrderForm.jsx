@@ -41,7 +41,7 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
   const [newTask, setNewTask] = useState({ taskName: '', taskType: '' });
   const [newPart, setNewPart] = useState({ partId: '', quantity: 0 });
   const [isRecurring, setIsRecurring] = useState(initialValues && initialValues.isRecurring ? true : false);
-  const [photo, setPhoto] = useState(null);
+  const [photo, setPhoto] = useState(initialValues && initialValues.photoUrl ? initialValues.photoUrl : null);
   const [recurringWO, setRecurringWO] = useState(initialValues && initialValues.recurringWO ? initialValues.recurringWO : '- Select -');
   const [categories, setCategories] = useState([]);
   const [openCategoryModal, setOpenCategoryModal] = useState(false);
@@ -703,6 +703,15 @@ export default function WorkOrderRegister({closeModal, initialValues, isEdit, fe
                   />
                 </Stack>
               </Grid>
+
+              {photo && (
+                <Grid size={12}>
+                  <Stack sx={{ gap: 1 }}>
+                    <InputLabel>Photo</InputLabel>
+                    <img src={initialValues ? 'http://localhost:5000' + photo : URL.createObjectURL(photo)} alt="Work Order Photo" style={{ width: '400px', height: 'auto' }} />
+                  </Stack>
+                </Grid>
+              )}
               
               <Grid size={12}>
                 <Stack sx={{ gap: 1 }}>
